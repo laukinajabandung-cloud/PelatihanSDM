@@ -1,0 +1,2203 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PelatihanPro — Sistem Manajemen Pelatihan Pegawai</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700;9..144,800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<style>
+  :root {
+    --bg: #0A0B0F; --surface: #14151B; --surface-2: #1C1E26; --surface-3: #252833;
+    --border: rgba(255,255,255,0.06); --border-strong: rgba(255,255,255,0.12);
+    --fg: #F4F4F5; --fg-muted: #A1A1AA; --fg-subtle: #71717A;
+    --emerald: #10B981; --emerald-light: #34D399; --amber: #F59E0B; --coral: #F97316; --rose: #F43F5E; --violet: #8B5CF6; --sky: #0EA5E9;
+  }
+  * { box-sizing: border-box; }
+  body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg); color: var(--fg); margin: 0; overflow-x: hidden; -webkit-font-smoothing: antialiased; }
+  .font-display { font-family: 'Fraunces', serif; font-feature-settings: "ss01"; }
+  body::before { content: ''; position: fixed; inset: 0; background: radial-gradient(ellipse 80% 60% at 20% 0%, rgba(16,185,129,0.08), transparent 60%), radial-gradient(ellipse 60% 50% at 80% 100%, rgba(245,158,11,0.06), transparent 60%); pointer-events: none; z-index: 0; }
+  ::-webkit-scrollbar { width: 8px; height: 8px; } ::-webkit-scrollbar-track { background: transparent; } ::-webkit-scrollbar-thumb { background: var(--surface-3); border-radius: 4px; }
+  .card { background: linear-gradient(180deg, rgba(28,30,38,0.6) 0%, rgba(20,21,27,0.6) 100%); border: 1px solid var(--border); border-radius: 16px; backdrop-filter: blur(20px); }
+  .card-hover { transition: all 0.3s ease; } .card-hover:hover { border-color: var(--border-strong); transform: translateY(-2px); }
+  .nav-item { position: relative; transition: all 0.2s ease; cursor: pointer; } .nav-item:hover { background: rgba(255,255,255,0.03); color: var(--fg); }
+  .nav-item.active { background: linear-gradient(90deg, rgba(16,185,129,0.12), rgba(16,185,129,0.02)); color: var(--fg); }
+  .nav-item.active::before { content: ''; position: absolute; left: 0; top: 50%; transform: translateY(-50%); width: 3px; height: 60%; background: linear-gradient(180deg, var(--emerald), var(--emerald-light)); border-radius: 0 4px 4px 0; box-shadow: 0 0 12px var(--emerald); }
+  .nav-item.active .nav-icon { color: var(--emerald); }
+  .btn-primary { background: linear-gradient(135deg, var(--emerald) 0%, #059669 100%); color: #fff; box-shadow: 0 4px 14px rgba(16,185,129,0.25), inset 0 1px 0 rgba(255,255,255,0.2); transition: all 0.2s; font-weight: 600; cursor: pointer; border: none; }
+  .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(16,185,129,0.4); }
+  .btn-ghost { background: rgba(255,255,255,0.04); border: 1px solid var(--border); color: var(--fg); transition: all 0.2s; cursor: pointer; }
+  .btn-ghost:hover { background: rgba(255,255,255,0.08); border-color: var(--border-strong); }
+  .progress-bar { height: 6px; background: var(--surface-3); border-radius: 3px; overflow: hidden; position: relative; }
+  .progress-fill { height: 100%; background: linear-gradient(90deg, var(--emerald), var(--emerald-light)); border-radius: 3px; transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1); position: relative; }
+  .progress-fill::after { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent); animation: shimmer 2s infinite; }
+  @keyframes shimmer { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
+  .view { display: none; animation: fadeIn 0.4s ease; } .view.active { display: block; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.7; transform: scale(0.9); } }
+  .pulse-dot { animation: pulse 2s infinite; }
+  .avatar { display: inline-flex; align-items: center; justify-content: center; font-weight: 600; color: #fff; border-radius: 50%; flex-shrink: 0; }
+  .avatar-1 { background: linear-gradient(135deg, #10B981, #047857); } .avatar-2 { background: linear-gradient(135deg, #F59E0B, #B45309); } .avatar-3 { background: linear-gradient(135deg, #8B5CF6, #6D28D9); } .avatar-4 { background: linear-gradient(135deg, #F97316, #C2410C); } .avatar-5 { background: linear-gradient(135deg, #0EA5E9, #0369A1); } .avatar-6 { background: linear-gradient(135deg, #F43F5E, #BE123C); } .avatar-7 { background: linear-gradient(135deg, #14B8A6, #0F766E); } .avatar-8 { background: linear-gradient(135deg, #A855F7, #7E22CE); }
+  .badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 999px; font-size: 11px; font-weight: 600; white-space: nowrap; }
+  .badge-emerald { background: rgba(16,185,129,0.12); color: #34D399; border: 1px solid rgba(16,185,129,0.2); } .badge-amber { background: rgba(245,158,11,0.12); color: #FBBF24; border: 1px solid rgba(245,158,11,0.2); } .badge-rose { background: rgba(244,63,94,0.12); color: #FB7185; border: 1px solid rgba(244,63,94,0.2); } .badge-sky { background: rgba(14,165,233,0.12); color: #38BDF8; border: 1px solid rgba(14,165,233,0.2); } .badge-violet { background: rgba(139,92,246,0.12); color: #A78BFA; border: 1px solid rgba(139,92,246,0.2); } .badge-zinc { background: rgba(161,161,170,0.12); color: #D4D4D8; border: 1px solid rgba(161,161,170,0.2); }
+  table { border-collapse: collapse; width: 100%; } .data-table th { text-align: left; font-weight: 500; font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--fg-subtle); padding: 14px 16px; border-bottom: 1px solid var(--border); } .data-table td { padding: 14px 16px; border-bottom: 1px solid var(--border); font-size: 14px; } .data-table tbody tr:hover { background: rgba(255,255,255,0.02); }
+  .gradient-text { background: linear-gradient(135deg, #34D399 0%, #10B981 50%, #F59E0B 100%); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(8px); z-index: 100; display: none; align-items: center; justify-content: center; padding: 20px; }
+  .modal-overlay.active { display: flex; }
+  .modal-content { background: linear-gradient(180deg, var(--surface-2), var(--surface)); border: 1px solid var(--border-strong); border-radius: 20px; max-width: 640px; width: 100%; max-height: 90vh; overflow-y: auto; animation: slideUp 0.3s ease; }
+  @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+  .toast { position: fixed; bottom: 24px; right: 24px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 12px; padding: 14px 20px; display: flex; align-items: center; gap: 12px; z-index: 200; transform: translateX(450px); transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); box-shadow: 0 10px 40px rgba(0,0,0,0.4); min-width: 280px; } .toast.show { transform: translateX(0); }
+  .input-field { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px; color: var(--fg); font-size: 14px; width: 100%; transition: all 0.2s; font-family: inherit; }
+  .input-field:focus { outline: none; border-color: var(--emerald); box-shadow: 0 0 0 3px rgba(16,185,129,0.1); } .input-field::placeholder { color: var(--fg-subtle); }
+  .calendar-day { aspect-ratio: 1.4; border: 1px solid var(--border); border-radius: 10px; padding: 8px; transition: all 0.2s; cursor: pointer; position: relative; background: rgba(255,255,255,0.01); } .calendar-day:hover { background: var(--surface-2); border-color: var(--border-strong); } .calendar-day.has-event { background: linear-gradient(135deg, rgba(16,185,129,0.06), transparent); border-color: rgba(16,185,129,0.2); } .calendar-day.today { background: linear-gradient(135deg, rgba(16,185,129,0.2), rgba(16,185,129,0.05)); border-color: var(--emerald); } .calendar-day.today .day-num { color: var(--emerald-light); font-weight: 700; } .calendar-day.off { opacity: 0.3; }
+  .stat-card { position: relative; overflow: hidden; }
+  .stat-card::before { content: ''; position: absolute; top: -20px; right: -20px; width: 120px; height: 120px; background: radial-gradient(circle, var(--glow-color, rgba(16,185,129,0.15)), transparent 70%); pointer-events: none; }
+  @media (max-width: 1024px) { .sidebar { position: fixed; left: 0; top: 0; bottom: 0; transform: translateX(-100%); transition: transform 0.3s; z-index: 50; } .sidebar.open { transform: translateX(0); } .main-content { margin-left: 0 !important; } }
+  .menu-toggle { display: none; } @media (max-width: 1024px) { .menu-toggle { display: flex; } }
+  .custom-checkbox { width: 18px; height: 18px; border: 1.5px solid var(--border-strong); border-radius: 5px; background: var(--surface); cursor: pointer; transition: all 0.2s; position: relative; appearance: none; -webkit-appearance: none; } .custom-checkbox:checked { background: var(--emerald); border-color: var(--emerald); } .custom-checkbox:checked::after { content: ''; position: absolute; left: 5px; top: 2px; width: 5px; height: 9px; border: solid white; border-width: 0 2px 2px 0; transform: rotate(45deg); }
+  .slide-panel { position: fixed; top: 0; right: 0; bottom: 0; width: 380px; max-width: 90vw; background: linear-gradient(180deg, var(--surface-2), var(--surface)); border-left: 1px solid var(--border-strong); z-index: 90; transform: translateX(100%); transition: transform 0.3s ease; display: flex; flex-direction: column; } .slide-panel.open { transform: translateX(0); }
+  .dropdown-menu { position: absolute; right: 0; top: 100%; margin-top: 4px; background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 10px; padding: 6px; min-width: 160px; box-shadow: 0 10px 30px rgba(0,0,0,0.4); z-index: 50; display: none; } .dropdown-menu.open { display: block; }
+  .dropdown-item { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 6px; font-size: 13px; cursor: pointer; transition: background 0.15s; color: var(--fg); } .dropdown-item:hover { background: rgba(255,255,255,0.06); } .dropdown-item.danger { color: var(--rose); }
+  .tab-btn { padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.2s; border: 1px solid var(--border); background: rgba(255,255,255,0.04); color: var(--fg); } .tab-btn.active { background: var(--emerald); color: white; border-color: var(--emerald); }
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<!-- LOGIN OVERLAY -->
+<div id="loginOverlay" class="fixed inset-0 z-[300] flex items-center justify-center p-4" style="background: radial-gradient(circle at center, #14151B, #0A0B0F);">
+  <div class="card p-8 w-full max-w-md text-center">
+    <div class="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4" style="background:linear-gradient(135deg, var(--emerald), #047857);">
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
+    </div>
+    <h1 class="font-display text-3xl font-bold mb-2">PelatihanPro</h1>
+    <p class="text-sm mb-6" style="color:var(--fg-muted)">Sistem Manajemen Pelatihan Pegawai</p>
+    <div class="space-y-3 text-left">
+      <div>
+        <label class="text-xs font-medium mb-1.5 block" style="color:var(--fg-muted)">Username</label>
+        <input type="text" id="loginUsername" class="input-field" placeholder="Masukkan username" onkeypress="if(event.key==='Enter') document.getElementById('loginPassword').focus()">
+      </div>
+      <div>
+        <label class="text-xs font-medium mb-1.5 block" style="color:var(--fg-muted)">Password</label>
+        <div class="relative">
+          <input type="password" id="loginPassword" class="input-field pr-10" placeholder="Masukkan password" onkeypress="if(event.key==='Enter') attemptLogin()">
+          <button type="button" onclick="togglePass()" class="absolute right-3 top-1/2 -translate-y-1/2 text-xs" style="color:var(--fg-muted)"><i class="w-4 h-4" data-lucide="eye" id="passIcon"></i></button>
+        </div>
+      </div>
+      <button onclick="attemptLogin()" class="w-full btn-primary p-3 rounded-xl font-semibold mt-2">Masuk ke Sistem</button>
+      <div class="text-[11px] text-center mt-4 p-3 rounded-lg" style="background:rgba(255,255,255,0.03); color:var(--fg-subtle)">
+        <p>Akun Demo:</p>
+        <p>HR: <b>hr</b> / hr123 &nbsp;|&nbsp; Admin: <b>admin</b> / admin123</p>
+        <p>Pimpinan: <b>boss</b> / boss123</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div class="flex min-h-screen relative hidden" style="z-index:1" id="mainApp">
+  <aside class="sidebar w-64 flex-shrink-0 flex flex-col" style="background:linear-gradient(180deg, rgba(20,21,27,0.8), rgba(10,11,15,0.95)); border-right:1px solid var(--border); backdrop-filter:blur(20px);">
+    <div class="px-6 py-6 flex items-center gap-3 border-b" style="border-color:var(--border)">
+      <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background:linear-gradient(135deg, var(--emerald), #047857); box-shadow:0 8px 24px rgba(16,185,129,0.3);"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg></div>
+      <div><div class="font-display text-xl font-bold leading-none">PelatihanPro</div><div class="text-[11px] mt-1" style="color:var(--fg-subtle)">Employee LMS</div></div>
+    </div>
+    <nav class="flex-1 px-3 py-4 overflow-y-auto">
+      <div class="text-[10px] font-semibold uppercase tracking-wider px-3 mb-2" style="color:var(--fg-subtle)">Menu Utama</div>
+      <div class="nav-item active flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium mb-1" data-view="dashboard"><i class="nav-icon w-4 h-4" data-lucide="layout-dashboard"></i><span>Dashboard</span></div>
+      <div class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium mb-1" data-view="employees"><i class="nav-icon w-4 h-4" data-lucide="users"></i><span>Pegawai</span><span class="ml-auto badge badge-emerald" id="navEmpCount">0</span></div>
+      <div class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium mb-1" data-view="programs"><i class="nav-icon w-4 h-4" data-lucide="graduation-cap"></i><span>Program Pelatihan</span></div>
+      <div class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium mb-1" data-view="schedule"><i class="nav-icon w-4 h-4" data-lucide="calendar-days"></i><span>Jadwal</span></div>
+      <div class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium mb-1" data-view="certificates"><i class="nav-icon w-4 h-4" data-lucide="award"></i><span>Sertifikat</span></div>
+      <div class="text-[10px] font-semibold uppercase tracking-wider px-3 mb-2 mt-6" style="color:var(--fg-subtle)">Analitik</div>
+      <div class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium mb-1" data-view="reports"><i class="nav-icon w-4 h-4" data-lucide="bar-chart-3"></i><span>Laporan</span></div>
+      <div class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium mb-1" data-view="settings" id="navSettings"><i class="nav-icon w-4 h-4" data-lucide="settings"></i><span>Pengaturan</span></div>
+    </nav>
+    <div class="p-3 border-t" style="border-color:var(--border)">
+      <div class="card p-3 flex items-center gap-3"><div class="avatar avatar-1 w-9 h-9 text-sm" id="userAvatar">RA</div><div class="flex-1 min-w-0"><div class="text-sm font-semibold truncate" id="userName">Rini Anggraini</div><div class="text-[11px] truncate" style="color:var(--fg-muted)" id="userRole">HR Learning Manager</div></div><button class="p-1.5 rounded-lg hover:bg-white/5" onclick="confirmLogout()"><i class="w-4 h-4" data-lucide="log-out" style="color:var(--fg-muted)"></i></button></div>
+    </div>
+  </aside>
+  
+  <main class="main-content flex-1 min-w-0">
+    <header class="sticky top-0 z-30 px-6 lg:px-8 py-4 flex items-center gap-4" style="background:rgba(10,11,15,0.7); backdrop-filter:blur(20px); border-bottom:1px solid var(--border);">
+      <button class="menu-toggle p-2 rounded-lg hover:bg-white/5" onclick="document.querySelector('.sidebar').classList.toggle('open')"><i class="w-5 h-5" data-lucide="menu"></i></button>
+      <div class="flex-1 max-w-md relative"><i class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2" data-lucide="search" style="color:var(--fg-subtle)"></i><input type="text" placeholder="Cari pegawai, program, atau sertifikat..." class="input-field pl-10 py-2.5 text-sm" id="globalSearch"><kbd class="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] px-1.5 py-0.5 rounded border" style="border-color:var(--border-strong); color:var(--fg-subtle)">⌘K</kbd></div>
+      <div id="searchResults" class="absolute left-4 right-4 lg:left-auto lg:right-8 lg:max-w-md top-full mt-2 card p-2 hidden" style="z-index:40; max-height:400px; overflow-y:auto;"></div>
+      <div class="flex items-center gap-2">
+        <button class="btn-ghost p-2.5 rounded-lg relative" onclick="togglePanel('notifPanel')"><i class="w-4 h-4" data-lucide="bell"></i><span class="absolute top-1 right-1 w-2 h-2 rounded-full pulse-dot" style="background:var(--coral)"></span></button>
+        <button class="btn-ghost p-2.5 rounded-lg" onclick="togglePanel('msgPanel')"><i class="w-4 h-4" data-lucide="messages-square"></i></button>
+        <button class="btn-primary px-4 py-2.5 rounded-lg text-sm flex items-center gap-2 btn-add-action" onclick="openAddProgramModal()"><i class="w-4 h-4" data-lucide="plus"></i><span class="hidden sm:inline">Pelatihan Baru</span></button>
+      </div>
+    </header>
+    
+    <div class="px-6 lg:px-8 py-6">
+      <!-- DASHBOARD -->
+      <section class="view active" id="view-dashboard">
+        <div class="mb-8"><div class="flex items-center gap-2 text-xs mb-3" style="color:var(--fg-muted)"><span>Beranda</span><i class="w-3 h-3" data-lucide="chevron-right"></i><span style="color:var(--fg)">Dashboard</span></div><h1 class="font-display text-4xl lg:text-5xl font-bold leading-tight">Selamat datang, <span class="gradient-text" id="dashName">Rini</span></h1><p class="mt-2 text-base" style="color:var(--fg-muted)">Ringkasan aktivitas pelatihan pegawai per <span id="currentMonthYear"></span>.</p></div>
+        
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          <div class="card stat-card p-5 card-hover cursor-pointer" style="--glow-color:rgba(16,185,129,0.2)" onclick="switchView('employees')"><div class="flex items-start justify-between mb-3"><div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background:rgba(16,185,129,0.1)"><i class="w-5 h-5" data-lucide="users" style="color:var(--emerald-light)"></i></div><span class="badge badge-emerald"><i class="w-3 h-3" data-lucide="trending-up"></i>Live</span></div><div class="text-3xl font-bold" id="statTotalEmployees">0</div><div class="text-sm mt-1" style="color:var(--fg-muted)">Total Pegawai Aktif</div><div class="text-xs mt-3" style="color:var(--fg-subtle)">Data diperbarui otomatis</div></div>
+          <div class="card stat-card p-5 card-hover cursor-pointer" style="--glow-color:rgba(245,158,11,0.2)" onclick="switchView('programs')"><div class="flex items-start justify-between mb-3"><div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background:rgba(245,158,11,0.1)"><i class="w-5 h-5" data-lucide="book-open" style="color:var(--amber)"></i></div><span class="badge badge-amber"><i class="w-3 h-3" data-lucide="trending-up"></i>Live</span></div><div class="text-3xl font-bold" id="statTotalPrograms">0</div><div class="text-sm mt-1" style="color:var(--fg-muted)">Program Pelatihan</div><div class="text-xs mt-3" style="color:var(--fg-subtle)">Tersedia saat ini</div></div>
+          <div class="card stat-card p-5 card-hover cursor-pointer" style="--glow-color:rgba(139,92,246,0.2)" onclick="switchView('reports')"><div class="flex items-start justify-between mb-3"><div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background:rgba(139,92,246,0.1)"><i class="w-5 h-5" data-lucide="activity" style="color:var(--violet)"></i></div><span class="badge badge-emerald"><i class="w-3 h-3" data-lucide="trending-up"></i>Live</span></div><div class="text-3xl font-bold" id="statAvgCompletion">0<span class="text-xl" style="color:var(--fg-muted)">%</span></div><div class="text-sm mt-1" style="color:var(--fg-muted)">Tingkat Penyelesaian</div><div class="text-xs mt-3" style="color:var(--fg-subtle)">Rata-rata progres pegawai</div></div>
+          <div class="card stat-card p-5 card-hover cursor-pointer" style="--glow-color:rgba(14,165,233,0.2)" onclick="switchView('certificates')"><div class="flex items-start justify-between mb-3"><div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background:rgba(14,165,233,0.1)"><i class="w-5 h-5" data-lucide="award" style="color:var(--sky)"></i></div><span class="badge badge-sky"><i class="w-3 h-3" data-lucide="trending-up"></i>Live</span></div><div class="text-3xl font-bold" id="statTotalCerts">0</div><div class="text-sm mt-1" style="color:var(--fg-muted)">Sertifikat Diterbitkan</div><div class="text-xs mt-3" style="color:var(--fg-subtle)">Total rekam jejak</div></div>
+        </div>
+        
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-8">
+          <div class="card p-5 lg:col-span-2">
+            <div class="flex items-center justify-between mb-5">
+              <div><h3 class="font-semibold text-base">Tren Pelatihan Bulanan</h3><p class="text-xs mt-0.5" style="color:var(--fg-muted)">Jumlah pegawai yang menyelesaikan pelatihan tahun <span id="currentYearLabel"></span></p></div>
+              <div class="flex items-center gap-2" id="trendPeriodBtns">
+                <button class="tab-btn" data-period="6">6 Bulan</button>
+                <button class="tab-btn active" data-period="12">12 Bulan</button>
+              </div>
+            </div>
+            <div style="height:280px"><canvas id="trendChart"></canvas></div>
+          </div>
+          <div class="card p-5">
+            <div class="flex items-center justify-between mb-5">
+              <h3 class="font-semibold text-base">Aktivitas Terkini</h3>
+              <span class="badge badge-emerald"><span class="w-1.5 h-1.5 rounded-full pulse-dot" style="background:var(--emerald)"></span>Live</span>
+            </div>
+            <div class="space-y-4" id="activityList"></div>
+          </div>
+        </div>
+        
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-8">
+          <div class="card p-5">
+            <div class="mb-5">
+              <h3 class="font-semibold text-base">Distribusi per Departemen</h3>
+              <p class="text-xs mt-0.5" style="color:var(--fg-muted)">Perbandingan total pegawai vs yang mengikuti pelatihan</p>
+            </div>
+            <div style="height:320px; position:relative;"><canvas id="deptChart"></canvas></div>
+          </div>
+          <div class="card p-5">
+            <div class="mb-5">
+              <h3 class="font-semibold text-base">Distribusi per Bidang</h3>
+              <p class="text-xs mt-0.5" style="color:var(--fg-muted)">Perbandingan total pegawai vs yang mengikuti pelatihan</p>
+            </div>
+            <div style="height:320px; position:relative;"><canvas id="fieldChart"></canvas></div>
+          </div>
+        </div>
+        
+        <!-- NEW CHARTS: JP per Month -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-8">
+          <div class="card p-5">
+            <div class="mb-5">
+              <h3 class="font-semibold text-base">Jam Pelatihan (JP) per Departemen</h3>
+              <p class="text-xs mt-0.5" style="color:var(--fg-muted)">Total JP 6 bulan terakhir & rata-rata tahun ini vs Target</p>
+            </div>
+            <div style="height:300px; position:relative;"><canvas id="deptJpChart"></canvas></div>
+            <div class="mt-4 space-y-2 max-h-40 overflow-y-auto pr-2" id="deptJpLegend"></div>
+          </div>
+          <div class="card p-5">
+            <div class="mb-5">
+              <h3 class="font-semibold text-base">Jam Pelatihan (JP) per Bidang</h3>
+              <p class="text-xs mt-0.5" style="color:var(--fg-muted)">Total JP 6 bulan terakhir & rata-rata tahun ini vs Target</p>
+            </div>
+            <div style="height:300px; position:relative;"><canvas id="fieldJpChart"></canvas></div>
+            <div class="mt-4 space-y-2 max-h-40 overflow-y-auto pr-2" id="fieldJpLegend"></div>
+          </div>
+        </div>
+        
+        <div class="card p-5">
+          <div class="flex items-center justify-between mb-5">
+            <div><h3 class="font-semibold text-base">Sesi Pelatihan Mendatang</h3><p class="text-xs mt-0.5" style="color:var(--fg-muted)">Jadwal terdekat</p></div>
+            <button class="text-xs font-medium flex items-center gap-1" style="color:var(--emerald-light)" onclick="switchView('schedule')">Lihat semua<i class="w-3 h-3" data-lucide="arrow-right"></i></button>
+          </div>
+          <div class="space-y-3" id="upcomingList"></div>
+        </div>
+      </section>
+      
+      <!-- EMPLOYEES -->
+      <section class="view" id="view-employees">
+        <div class="flex flex-wrap items-end justify-between gap-4 mb-6">
+          <div><div class="flex items-center gap-2 text-xs mb-2" style="color:var(--fg-muted)"><span>Beranda</span><i class="w-3 h-3" data-lucide="chevron-right"></i><span style="color:var(--fg)">Pegawai</span></div><h1 class="font-display text-3xl lg:text-4xl font-bold">Manajemen Pegawai</h1><p class="mt-1 text-sm" style="color:var(--fg-muted)">Kelola data pegawai dan rekam jejak pelatihan mereka.</p></div>
+          <div class="flex gap-2 flex-wrap btn-add-action">
+            <button class="btn-ghost px-4 py-2.5 rounded-lg text-sm flex items-center gap-2" onclick="downloadTemplate()"><i class="w-4 h-4" data-lucide="file-down"></i>Unduh Template</button>
+            <button class="btn-ghost px-4 py-2.5 rounded-lg text-sm flex items-center gap-2" onclick="openModal('importModal')"><i class="w-4 h-4" data-lucide="upload"></i>Import Excel</button>
+            <button class="btn-ghost px-4 py-2.5 rounded-lg text-sm flex items-center gap-2" onclick="exportEmployees()"><i class="w-4 h-4" data-lucide="download"></i>Ekspor</button>
+            <button class="btn-primary px-4 py-2.5 rounded-lg text-sm flex items-center gap-2" onclick="openAddEmployeeModal()"><i class="w-4 h-4" data-lucide="user-plus"></i>Tambah Pegawai</button>
+          </div>
+        </div>
+        <div class="card p-4 mb-5 flex flex-wrap gap-3 items-center"><div class="flex-1 min-w-[200px] relative"><i class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2" data-lucide="search" style="color:var(--fg-subtle)"></i><input type="text" id="employeeSearch" placeholder="Cari nama atau email..." class="input-field pl-10 py-2 text-sm"></div><select class="input-field py-2 text-sm w-auto" id="filterDept"></select><select class="input-field py-2 text-sm w-auto" id="filterStatus"><option value="">Semua Status</option><option value="active">Aktif</option><option value="training">Sedang Pelatihan</option><option value="completed">Selesai</option></select></div>
+        <div class="card overflow-hidden"><div class="overflow-x-auto"><table class="data-table"><thead><tr><th style="width:40px"><input type="checkbox" class="custom-checkbox" id="selectAll"></th><th>NIP</th><th>Pegawai</th><th>Departemen</th><th>Bidang</th><th>Posisi</th><th class="text-center">Pelatihan</th><th class="text-center">Jam (JP)</th><th>Progress</th><th>Status</th><th style="width:60px"></th></tr></thead><tbody id="employeeTableBody"></tbody></table></div><div class="flex items-center justify-between p-4 border-t flex-wrap gap-3" style="border-color:var(--border)"><div class="text-xs" style="color:var(--fg-muted)">Menampilkan <span id="empCount">0</span> dari <span id="empTotal">0</span> pegawai</div><div class="flex items-center gap-1" id="pagination"></div></div></div>
+      </section>
+      
+      <!-- PROGRAMS -->
+      <section class="view" id="view-programs">
+        <div class="flex flex-wrap items-end justify-between gap-4 mb-6"><div><div class="flex items-center gap-2 text-xs mb-2" style="color:var(--fg-muted)"><span>Beranda</span><i class="w-3 h-3" data-lucide="chevron-right"></i><span style="color:var(--fg)">Program Pelatihan</span></div><h1 class="font-display text-3xl lg:text-4xl font-bold">Katalog Program Pelatihan</h1><p class="mt-1 text-sm" style="color:var(--fg-muted)">Tersedia <span id="programCount">0</span> program pelatihan untuk pengembangan kompetensi pegawai.</p></div><button class="btn-primary px-4 py-2.5 rounded-lg text-sm flex items-center gap-2 btn-add-action" onclick="openAddProgramModal()"><i class="w-4 h-4" data-lucide="plus"></i>Buat Program</button></div>
+        <div class="flex flex-wrap gap-2 mb-6" id="categoryTabs"></div>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5" id="programsGrid"></div>
+      </section>
+      
+      <!-- SCHEDULE -->
+      <section class="view" id="view-schedule">
+        <div class="flex flex-wrap items-end justify-between gap-4 mb-6"><div><div class="flex items-center gap-2 text-xs mb-2" style="color:var(--fg-muted)"><span>Beranda</span><i class="w-3 h-3" data-lucide="chevron-right"></i><span style="color:var(--fg)">Jadwal</span></div><h1 class="font-display text-3xl lg:text-4xl font-bold">Jadwal Pelatihan</h1><p class="mt-1 text-sm" style="color:var(--fg-muted)">Kelola jadwal sesi pelatihan yang akan datang.</p></div><div class="flex gap-2"><div class="flex rounded-lg overflow-hidden" style="border:1px solid var(--border)" id="scheduleViewToggle"><button class="px-3 py-2 text-sm font-medium" style="background:var(--emerald); color:white" data-mode="cal">Kalender</button><button class="px-3 py-2 text-sm" style="background:var(--surface); color:var(--fg-muted)" data-mode="list">Daftar</button></div><button class="btn-primary px-4 py-2.5 rounded-lg text-sm flex items-center gap-2 btn-add-action" onclick="openAddScheduleModal()"><i class="w-4 h-4" data-lucide="calendar-plus"></i>Jadwalkan Sesi</button></div></div>
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+          <div class="card p-5 lg:col-span-2 schedule-cal-view" id="scheduleCalView"><div class="flex items-center justify-between mb-5"><div class="flex items-center gap-3"><button class="btn-ghost w-8 h-8 rounded-lg flex items-center justify-center" onclick="changeMonth(-1)"><i class="w-4 h-4" data-lucide="chevron-left"></i></button><h3 class="font-display text-xl font-semibold" id="calMonthLabel"></h3><button class="btn-ghost w-8 h-8 rounded-lg flex items-center justify-center" onclick="changeMonth(1)"><i class="w-4 h-4" data-lucide="chevron-right"></i></button></div><button class="btn-ghost px-3 py-1.5 rounded-lg text-xs" onclick="goToday()">Hari ini</button></div><div class="grid grid-cols-7 gap-2 mb-2"><div class="text-center text-xs font-semibold py-2" style="color:var(--fg-subtle)">Min</div><div class="text-center text-xs font-semibold py-2" style="color:var(--fg-subtle)">Sen</div><div class="text-center text-xs font-semibold py-2" style="color:var(--fg-subtle)">Sel</div><div class="text-center text-xs font-semibold py-2" style="color:var(--fg-subtle)">Rab</div><div class="text-center text-xs font-semibold py-2" style="color:var(--fg-subtle)">Kam</div><div class="text-center text-xs font-semibold py-2" style="color:var(--fg-subtle)">Jum</div><div class="text-center text-xs font-semibold py-2" style="color:var(--fg-subtle)">Sab</div></div><div class="grid grid-cols-7 gap-2" id="calendarGrid"></div><div id="calEventDetail" class="mt-4 p-4 rounded-xl hidden" style="background:rgba(16,185,129,0.05); border:1px solid rgba(16,185,129,0.15)"></div></div>
+          <div class="card p-5 lg:col-span-2 schedule-list-view hidden" id="scheduleListFullView"><h3 class="font-semibold text-base mb-4">Daftar Sesi Pelatihan</h3><div class="space-y-3" id="scheduleListFull"></div></div>
+          <div class="card p-5"><h3 class="font-semibold text-base mb-4">Sesi Mendatang</h3><div class="space-y-3" id="scheduleList"></div></div>
+        </div>
+      </section>
+      
+      <!-- CERTIFICATES -->
+      <section class="view" id="view-certificates">
+        <div class="flex flex-wrap items-end justify-between gap-4 mb-6"><div><div class="flex items-center gap-2 text-xs mb-2" style="color:var(--fg-muted)"><span>Beranda</span><i class="w-3 h-3" data-lucide="chevron-right"></i><span style="color:var(--fg)">Sertifikat</span></div><h1 class="font-display text-3xl lg:text-4xl font-bold">Manajemen Sertifikat</h1><p class="mt-1 text-sm" style="color:var(--fg-muted)">Total <span id="certTotalCount">0</span> sertifikat telah diterbitkan.</p></div><button class="btn-primary px-4 py-2.5 rounded-lg text-sm flex items-center gap-2 btn-add-action" onclick="openAddCertModal()"><i class="w-4 h-4" data-lucide="file-signature"></i>Terbitkan Sertifikat</button></div>
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6"><div class="card p-4"><div class="text-xs" style="color:var(--fg-muted)">Total Diterbitkan</div><div class="text-2xl font-bold mt-1" id="certStat1">0</div></div><div class="card p-4"><div class="text-xs" style="color:var(--fg-muted)">Bulan Ini</div><div class="text-2xl font-bold mt-1" style="color:var(--emerald-light)" id="certStatMonth">0</div></div><div class="card p-4"><div class="text-xs" style="color:var(--fg-muted)">Akan Kadaluarsa</div><div class="text-2xl font-bold mt-1" style="color:var(--amber)" id="certStatExpire">0</div></div><div class="card p-4"><div class="text-xs" style="color:var(--fg-muted)">Rata-rata Skor</div><div class="text-2xl font-bold mt-1" id="certStatScore">0</div></div></div>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5" id="certGrid"></div>
+      </section>
+      
+      <!-- REPORTS -->
+      <section class="view" id="view-reports">
+        <div class="mb-6"><div class="flex items-center gap-2 text-xs mb-2" style="color:var(--fg-muted)"><span>Beranda</span><i class="w-3 h-3" data-lucide="chevron-right"></i><span style="color:var(--fg)">Laporan</span></div><h1 class="font-display text-3xl lg:text-4xl font-bold">Analitik & Laporan</h1><p class="mt-1 text-sm" style="color:var(--fg-muted)">Insight mendalam tentang efektivitas program pelatihan.</p></div>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-5"><div class="card p-5"><h3 class="font-semibold mb-1">Kategori Pelatihan</h3><p class="text-xs mb-4" style="color:var(--fg-muted)">Distribusi pelatihan berdasarkan kategori</p><div style="height:300px"><canvas id="catChart"></canvas></div></div><div class="card p-5"><h3 class="font-semibold mb-1">Tingkat Penyelesaian</h3><p class="text-xs mb-4" style="color:var(--fg-muted)">Perbandingan target vs aktual per departemen</p><div style="height:300px"><canvas id="completionChart"></canvas></div></div></div>
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-5"><div class="card p-5"><h3 class="font-semibold mb-1">Investasi Pelatihan</h3><p class="text-xs mb-4" style="color:var(--fg-muted)">Diakumulasi dari biaya sesi yang dijadwalkan</p><div class="text-3xl font-bold mb-1" id="rptTotalInvest">Rp 0</div><div style="height:120px"><canvas id="investChart"></canvas></div></div><div class="card p-5"><h3 class="font-semibold mb-1">Skor Kepuasan</h3><p class="text-xs mb-4" style="color:var(--fg-muted)">Rata-rata rating dari peserta yang lulus</p><div class="text-3xl font-bold mb-1"><span id="rptAvgSat">0.0</span><span class="text-base" style="color:var(--fg-muted)">/5.0</span></div><div style="height:120px"><canvas id="satisfactionChart"></canvas></div></div><div class="card p-5"><h3 class="font-semibold mb-1">Efektivitas</h3><p class="text-xs mb-4" style="color:var(--fg-muted)">Peningkatan kinerja pasca pelatihan</p><div class="text-3xl font-bold mb-1"><span id="rptAvgEff">0</span><span class="text-base" style="color:var(--fg-muted)">%</span></div><div style="height:120px"><canvas id="effectivenessChart"></canvas></div></div></div>
+      </section>
+      
+      <!-- SETTINGS -->
+      <section class="view" id="view-settings">
+        <div class="mb-6"><div class="flex items-center gap-2 text-xs mb-2" style="color:var(--fg-muted)"><span>Beranda</span><i class="w-3 h-3" data-lucide="chevron-right"></i><span style="color:var(--fg)">Pengaturan</span></div><h1 class="font-display text-3xl lg:text-4xl font-bold">Pengaturan Sistem</h1></div>
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+          <div class="card p-5 lg:col-span-2">
+            <h3 class="font-semibold mb-4">Profil Organisasi & Pengelola</h3>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div><label class="text-xs font-medium mb-1.5 block" style="color:var(--fg-muted)">Nama Perusahaan</label><input type="text" class="input-field" id="setCompany"></div>
+              <div><label class="text-xs font-medium mb-1.5 block" style="color:var(--fg-muted)">Industri</label><input type="text" class="input-field" id="setIndustry"></div>
+              <div><label class="text-xs font-medium mb-1.5 block" style="color:var(--fg-muted)">Email Kontak</label><input type="email" class="input-field" id="setEmail"></div>
+              <div><label class="text-xs font-medium mb-1.5 block" style="color:var(--fg-muted)">Zona Waktu</label><select class="input-field" id="setTimezone"><option>WIB (UTC+7)</option><option>WITA (UTC+8)</option><option>WIT (UTC+9)</option></select></div>
+              <div><label class="text-xs font-medium mb-1.5 block" style="color:var(--fg-muted)">Target JP per Pegawai / Tahun</label><input type="number" class="input-field" id="setJpTarget" value="40" min="0"></div>
+            </div>
+            <hr class="my-4" style="border-color:var(--border)">
+            <h4 class="font-semibold mb-3 text-sm">Profil Pengelola (HR)</h4>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div><label class="text-xs font-medium mb-1.5 block" style="color:var(--fg-muted)">Nama Pengelola</label><input type="text" class="input-field" id="setHrName"></div>
+              <div><label class="text-xs font-medium mb-1.5 block" style="color:var(--fg-muted)">Jabatan</label><input type="text" class="input-field" id="setHrRole"></div>
+            </div>
+            <div class="flex gap-2 mt-5"><button class="btn-primary px-4 py-2 rounded-lg text-sm" onclick="saveSettings()">Simpan Perubahan</button></div>
+          </div>
+          <div class="card p-5"><h3 class="font-semibold mb-4">Master Departemen</h3><div class="flex gap-2 mb-4"><input type="text" id="newDeptName" class="input-field" placeholder="Nama departemen baru"><button class="btn-primary px-4 py-2 rounded-lg text-sm whitespace-nowrap" onclick="addMaster('dept')">Tambah</button></div><div id="deptMasterList" class="space-y-2 max-h-40 overflow-y-auto pr-2"></div></div>
+          <div class="card p-5"><h3 class="font-semibold mb-4">Master Bidang</h3><div class="flex gap-2 mb-4"><input type="text" id="newFieldName" class="input-field" placeholder="Nama bidang baru"><button class="btn-primary px-4 py-2 rounded-lg text-sm whitespace-nowrap" onclick="addMaster('field')">Tambah</button></div><div id="fieldMasterList" class="space-y-2 max-h-40 overflow-y-auto pr-2"></div></div>
+          <div class="card p-5"><h3 class="font-semibold mb-4">Master Posisi</h3><div class="flex gap-2 mb-4"><input type="text" id="newPosName" class="input-field" placeholder="Nama posisi baru"><button class="btn-primary px-4 py-2 rounded-lg text-sm whitespace-nowrap" onclick="addMaster('pos')">Tambah</button></div><div id="posMasterList" class="space-y-2 max-h-40 overflow-y-auto pr-2"></div></div>
+          <div class="card p-5"><h3 class="font-semibold mb-4">Master Kategori Pelatihan</h3><div class="flex gap-2 mb-4"><input type="text" id="newCatName" class="input-field" placeholder="Nama kategori baru"><button class="btn-primary px-4 py-2 rounded-lg text-sm whitespace-nowrap" onclick="addMaster('cat')">Tambah</button></div><div id="catList" class="space-y-2 max-h-40 overflow-y-auto pr-2"></div></div>
+        </div>
+      </section>
+    </div>
+  </main>
+</div>
+
+<!-- Slide Panel Backdrop -->
+<div id="panelBackdrop" class="fixed inset-0 z-[80] hidden bg-black/50 backdrop-blur-sm" onclick="closeAllPanels()"></div>
+
+<!-- Notification Panel -->
+<div id="notifPanel" class="slide-panel">
+  <div class="p-4 border-b flex items-center justify-between" style="border-color:var(--border)">
+    <h3 class="font-semibold flex items-center gap-2"><i class="w-5 h-5" data-lucide="bell"></i> Notifikasi</h3>
+    <button class="p-1.5 rounded-lg hover:bg-white/5" onclick="closeAllPanels()"><i class="w-4 h-4" data-lucide="x"></i></button>
+  </div>
+  <div class="flex-1 overflow-y-auto p-4 space-y-3" id="notifList"></div>
+</div>
+
+<!-- Message Panel -->
+<div id="msgPanel" class="slide-panel">
+  <div class="p-4 border-b flex items-center justify-between" style="border-color:var(--border)">
+    <h3 class="font-semibold flex items-center gap-2"><i class="w-5 h-5" data-lucide="messages-square"></i> Pesan</h3>
+    <button class="p-1.5 rounded-lg hover:bg-white/5" onclick="closeAllPanels()"><i class="w-4 h-4" data-lucide="x"></i></button>
+  </div>
+  <div class="flex-1 overflow-y-auto p-4 space-y-3" id="msgList"></div>
+</div>
+
+<!-- ============ MODALS ============ -->
+
+<!-- Employee Modal -->
+<div class="modal-overlay" id="employeeModal"><div class="modal-content"><div class="p-6 border-b flex items-center justify-between" style="border-color:var(--border)"><div><h3 class="font-display text-xl font-bold" id="empModalTitle">Tambah Pegawai</h3><p class="text-xs mt-1" style="color:var(--fg-muted)">Lengkapi data pegawai di bawah ini</p></div><button onclick="closeModal('employeeModal')" class="p-2 rounded-lg hover:bg-white/5"><i class="w-5 h-5" data-lucide="x"></i></button></div><div class="p-6 space-y-4"><input type="hidden" id="empId"><div class="grid grid-cols-2 gap-4"><div><label class="text-xs font-medium mb-1.5 block" style="color:var(--fg-muted)">NIP</label><input type="text" class="input-field" id="empNip" placeholder="Contoh: 199001012023001"></div><div><label class="text-xs font-medium mb-1.5 block" style="color:var(--fg-muted)">Nama Depan</label><input type="text" class="input-field" id="empFirst" placeholder="contoh: Budi"></div></div><div class="grid grid-cols-2 gap-4"><div><label class="text-xs font-medium mb-1.5 block" style="color:var(--fg-muted)">Nama Belakang</label><input type="text" class="input-field" id="empLast" placeholder="contoh: Santoso"></div><div><label class="text-xs font-medium mb-1.5 block" style="color:var(--fg-muted)">Email</label><input type="email" class="input-field" id="empEmail" placeholder="nama@perusahaan.co.id"></div></div><div class="grid grid-cols-3 gap-4"><div><label class="text-xs font-medium mb-1.5 block" style="color:var(--fg-muted)">Departemen</label><select class="input-field" id="empDept"></select></div><div><label class="text-xs font-medium mb-1.5 block" style="color:var(--fg-muted)">Bidang</label><select class="input-field" id="empField"></select></div><div><label class="text-xs font-medium mb-1.5 block" style="color:var(--fg-muted)">Posisi</label><select class="input-field" id="empPosition"></select></div></div><div class="grid grid-cols-2 gap-4"><div><label class="text-xs font-medium mb-1.5 block" style="color:var(--fg-muted)">Status</label><select class="input-field" id="empStatus"><option value="active">Aktif</option><option value="training">Pelatihan</option><option value="completed">Selesai</option></select></div><div><label class="text-xs font-medium mb-1.5 block" style="color:var(--fg-muted)">Jumlah Pelatihan</label><input type="number" class="input-field" id="empTrainings" value="0" min="0"></div></div><div class="grid grid-cols-2 gap-4"><div><label class="text-xs font-medium mb-1.5 block" style="color:var(--fg-muted)">Total Jam Pelatihan (JP)</label><input type="number" class="input-field" id="empTrainingHours" value="0" min="0"><p class="text-[11px] mt-1" style="color:var(--fg-subtle)">Otomatis terakumulasi dari pendaftaran pelatihan</p></div><div><label class="text-xs font-medium mb-1.5 block" style="color:var(--fg-muted)">Penyelesaian (%)</label><input type="number" class="input-field" id="empCompletion" value="0" min="0" max="100"></div></div></div><div class="p-6 border-t flex justify-end gap-2" style="border-color:var(--border)"><button onclick="closeModal('employeeModal')" class="btn-ghost px-4 py-2 rounded-lg text-sm">Batal</button><button onclick="saveEmployee()" class="btn-primary px-4 py-2 rounded-lg text-sm">Simpan</button></div></div></div>
+
+<!-- Enroll Modal -->
+<div class="modal-overlay" id="enrollModal"><div class="modal-content" style="max-width:680px"><div class="p-6 border-b flex items-center justify-between" style="border-color:var(--border)"><div><h3 class="font-display text-xl font-bold">Daftar Pelatihan Pegawai</h3><p class="text-xs mt-1" style="color:var(--fg-muted)" id="enrollSubTitle">Pilih program untuk pegawai</p></div><button onclick="closeModal('enrollModal')" class="p-2 rounded-lg hover:bg-white/5"><i class="w-5 h-5" data-lucide="x"></i></button></div><div class="p-6 space-y-4"><input type="hidden" id="enrollEmpId"><input type="hidden" id="enrollLogId"><div><label class="text-xs font-medium mb-1.5 block" style="color:var(--fg-muted)">Sumber Pelatihan</label><select class="input-field" id="enrollType" onchange="toggleEnrollType()"><option value="internal">Internal (Pilih dari Master Program)</option><option value="external">Eksternal (Input Manual)</option></select></div><div id="internalWrap"><label class="text-xs font-medium mb-1.5 block" style="color:var(--fg-muted)">Pilih Program</label><select class="input-field" id="enrollProgramInternal" onchange="autoFillInternalHours()"></select></div><div id="externalWrap" class="hidden space-y-4"><div class="grid grid-cols-2 gap-4"><div><label class="text-xs font-medium mb-1.5 block" style="color:var(--fg-muted)">Nama Program Eksternal</label><input type="text" class="input-field" id="enrollProgramExternal" placeholder="contoh: AWS Certified Solutions Architect"></div><div><label class="text-xs font-medium mb-1.5 block" style="color:var(--fg-muted)">Penyelenggara</label><input type="text" class="input-field" id="enrollVendor" placeholder="contoh: Amazon Web Services"></div></div><div class="grid grid-cols-2 gap-4"><div><label class="text-xs font-medium mb-1.5 block" style="color:var(--fg-muted)">Tanggal Pelaksanaan</label><input type="date" class="input-field" id="enrollExtDate"></div><div><label class="text-xs font-medium mb-1.5 block" style="color:var(--fg-muted)">Waktu Pelaksanaan</label><input type="time" class="input-field" id="enrollExtTime" value="08:00"></div></div><div><label class="text-xs font-medium mb-1.5 block" style="color:var(--fg-muted)">Tempat Pelaksanaan</label><input type="text" class="input-field" id="enrollExtLocation" placeholder="contoh: Hotel Mulia, Jakarta"></div></div><div><label class="text-xs font-medium mb-1.5 block" style="color:var(--fg-muted)">Jam Pelatihan (JP)</label><input type="number" class="input-field" id="enrollTrainingHours" value="0" min="0" placeholder="Jumlah jam pelatihan"><p class="text-[11px] mt-1" style="color:var(--fg-subtle)">Jam pelatihan akan otomatis ditambahkan ke total jam pelatihan pegawai</p></div></div><div class="p-6 border-t flex justify-end gap-2" style="border-color:var(--border)"><button onclick="closeModal('enrollModal')" class="btn-ghost px-4 py-2 rounded-lg text-sm">Batal</button><button onclick="confirmEnroll()" class="btn-primary px-4 py-2 rounded-lg text-sm">Daftarkan Pegawai</button></div></div></div>
+
+<div class="modal-overlay" id="newScheduleModal"><div class="modal-content"><div class="p-6 border-b flex items-center justify-between" style="border-color:var(--border)"><div><h3 class="font-display text-xl font-bold" id="schModalTitle">Jadwalkan Sesi Pelatihan</h3><p class="text-xs mt-1" style="color:var(--fg-muted)">Buat sesi pelatihan baru</p></div><button onclick="closeModal('newScheduleModal')" class="p-2 rounded-lg hover:bg-white/5"><i class="w-5 h-5" data-lucide="x"></i></button></div><div class="p-6 space-y-4"><input type="hidden" id="schId"><div><label class="text-xs font-medium mb-1.5 block" style="color:var(--fg-muted)">Program Pelatihan</label><select class="input-field" id="schProgram"></select></div><div class="grid grid-cols-2 gap-4"><div><label class="text-xs font-medium mb-1.5 block" style="color:var(--fg-muted)">Tanggal</label><input type="date" class="input-field" id="schDate"></div><div><label class="text-xs font-medium mb-1.5 block" style="color:var(--fg-muted)">Waktu</label><input type="time" class="input-field" id="schTime" value="09:00"></div></div><div class="grid grid-cols-2 gap-4"><div><label class="text-xs font-medium mb-1.5 block" style="color:var(--fg-muted)">Durasi (jam)</label><input type="number" class="input-field" id="schDuration" value="8"></div><div><label class="text-xs font-medium mb-1.5 block" style="color:var(--fg-muted)">Kuota Peserta</label><input type="number" class="input-field" id="schQuota" value="30"></div></div><div><label class="text-xs font-medium mb-1.5 block" style="color:var(--fg-muted)">Estimasi Biaya (Rp)</label><input type="number" class="input-field" id="schCost" value="5000000" min="0"></div><div><label class="text-xs font-medium mb-1.5 block" style="color:var(--fg-muted)">Lokasi</label><input type="text" class="input-field" id="schLocation" placeholder="contoh: Ruang Pelatihan A"></div><div><label class="text-xs font-medium mb-1.5 block" style="color:var(--fg-muted)">Instruktur</label><input type="text" class="input-field" id="schInstructor" placeholder="Nama instruktur"></div></div><div class="p-6 border-t flex justify-end gap-2" style="border-color:var(--border)"><button onclick="closeModal('newScheduleModal')" class="btn-ghost px-4 py-2 rounded-lg text-sm">Batal</button><button id="schSaveBtn" onclick="saveSchedule()" class="btn-primary px-4 py-2 rounded-lg text-sm">Jadwalkan Sesi</button></div></div></div>
+<div class="modal-overlay" id="newCertModal"><div class="modal-content"><div class="p-6 border-b flex items-center justify-between" style="border-color:var(--border)"><div><h3 class="font-display text-xl font-bold" id="certModalTitle">Terbitkan Sertifikat</h3><p class="text-xs mt-1" style="color:var(--fg-muted)">Buat sertifikat untuk pegawai</p></div><button onclick="closeModal('newCertModal')" class="p-2 rounded-lg hover:bg-white/5"><i class="w-5 h-5" data-lucide="x"></i></button></div><div class="p-6 space-y-4"><input type="hidden" id="certIdInput"><div><label class="text-xs font-medium mb-1.5 block" style="color:var(--fg-muted)">Pegawai</label><select class="input-field" id="certEmp"></select></div><div><label class="text-xs font-medium mb-1.5 block" style="color:var(--fg-muted)">Program Pelatihan</label><select class="input-field" id="certProgram"></select></div><div class="grid grid-cols-2 gap-4"><div><label class="text-xs font-medium mb-1.5 block" style="color:var(--fg-muted)">Tanggal Kelulusan</label><input type="date" class="input-field" id="certDate"></div><div><label class="text-xs font-medium mb-1.5 block" style="color:var(--fg-muted)">Skor Kelulusan (0-100)</option><input type="number" class="input-field" id="certScore" value="90" min="0" max="100"></div></div><div class="grid grid-cols-2 gap-4"><div><label class="text-xs font-medium mb-1.5 block" style="color:var(--fg-muted)">Rating Kepuasan (1.0 - 5.0)</label><input type="number" class="input-field" id="certSatisfaction" value="4.5" min="0" max="5" step="0.1"></div><div><label class="text-xs font-medium mb-1.5 block" style="color:var(--fg-muted)">Tingkat Efektivitas (%)</label><input type="number" class="input-field" id="certEffectiveness" value="75" min="0" max="100"></div></div><div><label class="text-xs font-medium mb-1.5 block" style="color:var(--fg-muted)">Masa Berlaku (tahun)</label><select class="input-field" id="certExpiry"><option value="2">2 Tahun</option><option value="3" selected>3 Tahun</option><option value="5">5 Tahun</option><option value="99">Seumur Hidup</option></select></div></div><div class="p-6 border-t flex justify-end gap-2" style="border-color:var(--border)"><button onclick="closeModal('newCertModal')" class="btn-ghost px-4 py-2 rounded-lg text-sm">Batal</button><button id="certSaveBtn" onclick="saveCertificate()" class="btn-primary px-4 py-2 rounded-lg text-sm">Terbitkan Sertifikat</button></div></div></div>
+<div class="modal-overlay" id="newTrainingModal"><div class="modal-content"><div class="p-6 border-b flex items-center justify-between" style="border-color:var(--border)"><div><h3 class="font-display text-xl font-bold" id="progModalTitle">Buat Program Pelatihan</h3><p class="text-xs mt-1" style="color:var(--fg-muted)">Lengkapi detail program pelatihan baru</p></div><button onclick="closeModal('newTrainingModal')" class="p-2 rounded-lg hover:bg-white/5"><i class="w-5 h-5" data-lucide="x"></i></button></div><div class="p-6 space-y-4"><input type="hidden" id="progId"><div><label class="text-xs font-medium mb-1.5 block" style="color:var(--fg-muted)">Judul Program</label><input type="text" class="input-field" id="trTitle" placeholder="contoh: Kepemimpinan Strategis Level Lanjut"></div><div class="grid grid-cols-2 gap-4"><div><label class="text-xs font-medium mb-1.5 block" style="color:var(--fg-muted)">Kategori</label><select class="input-field" id="trCategory"></select></div><div><label class="text-xs font-medium mb-1.5 block" style="color:var(--fg-muted)">Tingkat</label><select class="input-field" id="trLevel"><option>Pemula</option><option>Menengah</option><option>Lanjutan</option></select></div></div><div class="grid grid-cols-2 gap-4"><div><label class="text-xs font-medium mb-1.5 block" style="color:var(--fg-muted)">Durasi (jam)</label><input type="number" class="input-field" id="trDuration" value="40"></div><div><label class="text-xs font-medium mb-1.5 block" style="color:var(--fg-muted)">Kuota Peserta</label><input type="number" class="input-field" id="trQuota" value="30"></div></div><div><label class="text-xs font-medium mb-1.5 block" style="color:var(--fg-muted)">Instruktur</label><input type="text" class="input-field" id="trInstructor" placeholder="Nama instruktur"></div><div><label class="text-xs font-medium mb-1.5 block" style="color:var(--fg-muted)">Deskripsi</label><textarea class="input-field" rows="3" id="trDesc" placeholder="Deskripsi singkat program..."></textarea></div></div><div class="p-6 border-t flex justify-end gap-2" style="border-color:var(--border)"><button onclick="closeModal('newTrainingModal')" class="btn-ghost px-4 py-2 rounded-lg text-sm">Batal</button><button id="progSaveBtn" onclick="saveProgram()" class="btn-primary px-4 py-2 rounded-lg text-sm">Buat Program</button></div></div></div>
+<div class="modal-overlay" id="importModal"><div class="modal-content"><div class="p-6 border-b flex items-center justify-between" style="border-color:var(--border)"><div><h3 class="font-display text-xl font-bold">Import Data Pegawai</h3><p class="text-xs mt-1" style="color:var(--fg-muted)">Unggah file Excel atau CSV untuk menambahkan/memperbarui pegawai</p></div><button onclick="closeModal('importModal')" class="p-2 rounded-lg hover:bg-white/5"><i class="w-5 h-5" data-lucide="x"></i></button></div><div class="p-6 space-y-5"><div class="flex items-center gap-3 p-3 rounded-xl" style="background:rgba(14,165,233,0.05); border:1px solid rgba(14,165,233,0.15)"><i class="w-5 h-5" data-lucide="info" style="color:var(--sky)"></i><div class="text-xs flex-1" style="color:var(--fg-muted)">Pastikan format file sesuai template. Kolom NIP wajib diisi.</div><button class="text-xs font-medium flex items-center gap-1 px-2 py-1 rounded" style="color:var(--sky); background:rgba(14,165,233,0.1)" onclick="downloadTemplate()"><i class="w-3 h-3" data-lucide="download"></i>Unduh</button></div><div class="border-2 border-dashed rounded-xl p-8 text-center cursor-pointer hover:bg-white/[0.03]" style="border-color:var(--border-strong)" onclick="document.getElementById('importFileInput').click()"><input type="file" id="importFileInput" accept=".csv,.xlsx,.xls" style="display:none" onchange="handleImportFile(event)"><div class="flex flex-col items-center gap-3"><div class="w-14 h-14 rounded-full flex items-center justify-center" style="background:rgba(16,185,129,0.1)"><i class="w-7 h-7" data-lucide="upload-cloud" style="color:var(--emerald-light)"></i></div><div><div class="text-sm font-medium">Klik untuk memilih file atau drag & drop</div><div class="text-xs mt-1" style="color:var(--fg-muted)">Mendukung format .xlsx, .xls, .csv (Max 5MB)</div></div></div></div><div id="importPreview" class="hidden"><div class="text-xs font-semibold uppercase tracking-wider mb-2" style="color:var(--fg-muted)">Preview Data</div><div class="card overflow-hidden" style="max-height: 240px; overflow-y: auto;"><table class="data-table"><thead><tr><th>NIP</th><th>Nama</th><th>Email</th><th>Departemen</th></tr></thead><tbody id="importPreviewBody"></tbody></table></div></div></div><div class="p-6 border-t flex justify-between items-center" style="border-color:var(--border)"><div class="text-xs" style="color:var(--fg-muted)" id="importStatus"></div><div class="flex gap-2"><button onclick="closeModal('importModal'); resetImportModal();" class="btn-ghost px-4 py-2 rounded-lg text-sm">Batal</button><button id="confirmImportBtn" class="btn-primary px-4 py-2 rounded-lg text-sm" onclick="confirmImport()" disabled style="opacity:0.5; cursor:not-allowed">Import Data</button></div></div></div></div>
+<div class="modal-overlay" id="confirmModal"><div class="modal-content" style="max-width:420px"><div class="p-6"><div class="flex items-center gap-4 mb-4"><div class="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0" style="background:rgba(244,63,94,0.1)"><i class="w-6 h-6" data-lucide="alert-triangle" style="color:var(--rose)"></i></div><div><h3 class="font-display text-lg font-bold" id="confirmTitle">Konfirmasi</h3><p class="text-sm mt-1" style="color:var(--fg-muted)" id="confirmMsg">Apakah Anda yakin?</p></div></div></div><div class="p-6 border-t flex justify-end gap-2" style="border-color:var(--border)"><button onclick="closeModal('confirmModal')" class="btn-ghost px-4 py-2 rounded-lg text-sm">Batal</button><button id="confirmOkBtn" class="btn-primary px-4 py-2 rounded-lg text-sm" style="background:linear-gradient(135deg, var(--rose), #BE123C)">Ya, Lanjutkan</button></div></div></div>
+
+<!-- Employee Detail Modal -->
+<div class="modal-overlay" id="empDetailModal"><div class="modal-content" style="max-width:680px"><div class="p-6 border-b flex items-center justify-between" style="border-color:var(--border)"><h3 class="font-display text-xl font-bold">Detail Pegawai</h3><button onclick="closeModal('empDetailModal')" class="p-2 rounded-lg hover:bg-white/5"><i class="w-5 h-5" data-lucide="x"></i></button></div><div class="p-6" id="empDetailContent"></div></div></div>
+
+<div class="modal-overlay" id="schDetailModal"><div class="modal-content" style="max-width:520px"><div class="p-6 border-b flex items-center justify-between" style="border-color:var(--border)"><h3 class="font-display text-xl font-bold">Detail Sesi Pelatihan</h3><button onclick="closeModal('schDetailModal')" class="p-2 rounded-lg hover:bg-white/5"><i class="w-5 h-5" data-lucide="x"></i></button></div><div class="p-6" id="schDetailContent"></div></div></div>
+<div class="toast" id="toast"><div class="w-8 h-8 rounded-full flex items-center justify-center" style="background:rgba(16,185,129,0.15)"><i class="w-4 h-4" data-lucide="check" style="color:var(--emerald-light)"></i></div><div><div class="text-sm font-semibold" id="toastTitle">Berhasil</div><div class="text-xs" style="color:var(--fg-muted)" id="toastMsg">Operasi berhasil dilakukan</div></div></div>
+
+<script>
+const SUPABASE_URL = 'https://ymxzncuodwcwjwyxanhw.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlteHpuY3VvZHdjd2p3eXhhbmh3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg5MjI5NzcsImV4cCI6MjEwNDQ5ODk3N30.4JxqASOwKJVnDTolUvxh1vrAo2ebAygRu7zEUVojRAE';
+const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let currentUser = null;
+let appSettings = {};
+let employees = []; let programs = []; let schedules = []; let certificates = []; let trainingLogs = [];
+let departments = []; let fields = []; let positions = []; let categories = [];
+
+const validUsers = {
+  'hr': { password: 'hr123', role: 'hr', name: 'Rini Anggraini', title: 'HR Learning Manager' },
+  'admin': { password: 'admin123', role: 'admin', name: 'Admin Sistem', title: 'System Admin' },
+  'boss': { password: 'boss123', role: 'boss', name: 'Budi Pimpinan', title: 'Pimpinan (Read Only)' }
+};
+
+const deptChartColors = ['#10B981', '#F59E0B', '#8B5CF6', '#F97316', '#0EA5E9', '#F43F5E', '#14B8A6', '#A855F7', '#EC4899', '#84CC16'];
+const colorPalette = ['emerald', 'sky', 'amber', 'violet', 'rose', 'coral', 'teal', 'pink'];
+const colorMap = { emerald: { bg: 'rgba(16,185,129,0.1)', text: '#34D399', badge: 'badge-emerald' }, sky: { bg: 'rgba(14,165,233,0.1)', text: '#38BDF8', badge: 'badge-sky' }, amber: { bg: 'rgba(245,158,11,0.1)', text: '#FBBF24', badge: 'badge-amber' }, violet: { bg: 'rgba(139,92,246,0.1)', text: '#A78BFA', badge: 'badge-violet' }, rose: { bg: 'rgba(244,63,94,0.1)', text: '#FB7185', badge: 'badge-rose' }, coral: { bg: 'rgba(249,115,22,0.1)', text: '#FB923C', badge: 'badge-amber' }, teal: { bg: 'rgba(20,184,166,0.1)', text: '#2DD4BF', badge: 'badge-emerald' }, pink: { bg: 'rgba(236,72,153,0.1)', text: '#F472B6', badge: 'badge-rose' }, zinc: { bg: 'rgba(161,161,170,0.1)', text: '#D4D4D8', badge: 'badge-zinc' } };
+
+let currentMonth = new Date().getMonth(); let currentYear = new Date().getFullYear(); let currentPage = 1; const itemsPerPage = 8; let filteredEmployees = [];
+let trendChartInstance = null, catChartInstance = null, completionChartInstance = null, deptChartInstance = null, fieldChartInstance = null, deptJpChartInstance = null, fieldJpChartInstance = null; let importedData = []; let selectedDate = null;
+const monthNames = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+const monthNamesShort = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+
+function togglePass() {
+  const passInput = document.getElementById('loginPassword');
+  const passIcon = document.getElementById('passIcon');
+  if (passInput.type === 'password') { passInput.type = 'text'; passIcon.setAttribute('data-lucide', 'eye-off'); } 
+  else { passInput.type = 'password'; passIcon.setAttribute('data-lucide', 'eye'); }
+  lucide.createIcons();
+}
+
+function attemptLogin() {
+  const u = document.getElementById('loginUsername').value.trim();
+  const p = document.getElementById('loginPassword').value.trim();
+  const user = validUsers[u];
+  if (user && user.password === p) { login(user.role); } 
+  else { showToast('Login Gagal', 'Username atau password salah', 'error'); }
+}
+
+function login(role) {
+  currentUser = role;
+  document.getElementById('loginOverlay').classList.add('hidden');
+  document.getElementById('mainApp').classList.remove('hidden');
+  updateProfileDisplay();
+  
+  if (role === 'boss') {
+    document.querySelectorAll('.btn-add-action').forEach(el => el.classList.add('hidden'));
+    document.getElementById('navSettings').classList.add('hidden');
+  } else if (role === 'admin') {
+    document.querySelectorAll('.btn-add-action').forEach(el => el.classList.remove('hidden'));
+    document.getElementById('navSettings').classList.add('hidden'); 
+  } else { 
+    document.querySelectorAll('.btn-add-action').forEach(el => el.classList.remove('hidden'));
+    document.getElementById('navSettings').classList.remove('hidden');
+  }
+  syncDB();
+  lucide.createIcons();
+}
+
+function updateProfileDisplay() {
+  if (currentUser === 'boss') {
+    document.getElementById('userName').textContent = appSettings.boss_name || 'Budi Pimpinan';
+    document.getElementById('userRole').textContent = 'Pimpinan (Read Only)';
+    document.getElementById('userAvatar').textContent = (appSettings.boss_name || 'Budi Pimpinan').split(' ').map(n=>n[0]).join('').substring(0,2);
+    document.getElementById('dashName').textContent = appSettings.boss_name || 'Bapak/Ibu Pimpinan';
+  } else if (currentUser === 'admin') {
+    document.getElementById('userName').textContent = 'Admin Sistem';
+    document.getElementById('userRole').textContent = 'System Admin';
+    document.getElementById('userAvatar').textContent = 'AS';
+    document.getElementById('dashName').textContent = 'Admin';
+  } else {
+    document.getElementById('userName').textContent = appSettings.hr_name || 'Rini Anggraini';
+    document.getElementById('userRole').textContent = appSettings.hr_role || 'HR Learning Manager';
+    document.getElementById('userAvatar').textContent = (appSettings.hr_name || 'Rini Anggraini').split(' ').map(n=>n[0]).join('').substring(0,2);
+    document.getElementById('dashName').textContent = appSettings.hr_name || 'Rini';
+  }
+}
+
+function checkAccess() { 
+  if (currentUser === 'boss') { 
+    showToast('Akses Ditolak', 'Anda hanya memiliki izin monitoring', 'error'); 
+    return false; 
+  } 
+  return true; 
+}
+
+async function syncDB() {
+  try {
+    const { data: s } = await db.from('app_settings').select('*').eq('id', 1).single(); appSettings = s || {};
+    document.getElementById('setCompany').value = appSettings.company_name || '';
+    document.getElementById('setIndustry').value = appSettings.industry || '';
+    document.getElementById('setEmail').value = appSettings.email || '';
+    document.getElementById('setTimezone').value = appSettings.timezone || 'WIB (UTC+7)';
+    document.getElementById('setJpTarget').value = appSettings.jp_target || 40;
+    document.getElementById('setHrName').value = appSettings.hr_name || '';
+    document.getElementById('setHrRole').value = appSettings.hr_role || '';
+    updateProfileDisplay();
+
+    const { data: emp } = await db.from('employees').select('*'); employees = emp || [];
+    const { data: prog } = await db.from('programs').select('*'); programs = prog || [];
+    const { data: sch } = await db.from('schedules').select('*'); schedules = sch || [];
+    const { data: cert } = await db.from('certificates').select('*'); certificates = cert || [];
+    const { data: logs } = await db.from('training_logs').select('*'); trainingLogs = logs || [];
+    const { data: md } = await db.from('master_data').select('*');
+    departments = md?.filter(m => m.type === 'dept') || [];
+    fields = md?.filter(m => m.type === 'field') || [];
+    positions = md?.filter(m => m.type === 'pos') || [];
+    categories = md?.filter(m => m.type === 'cat') || [];
+    
+    filteredEmployees = [...employees];
+    populateFilterDept(); renderCategoryTabs(); populateDropdowns();
+    renderEmployees(); renderPrograms(); renderCalendar();
+    renderScheduleList(); renderScheduleListFull(); renderCertificates();
+    renderMasterData();
+    renderUpcomingList(); renderActivityList();
+    renderNotifPanel(); renderMsgPanel(); 
+    initDeptChart(); initFieldChart(); initCatChart(); initCompletionChart();
+    initDeptJpChart(); initFieldJpChart();
+    initTrendChart(12); 
+    updateDashboardStats(); updateReports();
+    lucide.createIcons();
+  } catch (e) { console.error("Sync Error:", e); }
+}
+
+function switchView(viewName) { 
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active')); 
+  document.getElementById('view-' + viewName).classList.add('active'); 
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active')); 
+  document.querySelector(`.nav-item[data-view="${viewName}"]`)?.classList.add('active'); 
+  window.scrollTo({ top: 0, behavior: 'smooth' }); 
+  document.querySelector('.sidebar')?.classList.remove('open'); 
+  
+  if (viewName === 'settings' && (currentUser === 'boss' || currentUser === 'admin')) { 
+    showToast('Akses Ditolak', 'Anda tidak memiliki akses ke Pengaturan', 'error'); 
+    switchView('dashboard'); return; 
+  } 
+  if (viewName === 'settings') renderMasterData(); 
+  if (viewName === 'dashboard') { 
+    renderUpcomingList(); renderActivityList(); 
+    initDeptChart(); initFieldChart(); initDeptJpChart(); initFieldJpChart();
+  }
+  if (viewName === 'reports') updateReports(); 
+}
+document.querySelectorAll('.nav-item').forEach(item => item.addEventListener('click', () => item.dataset.view && switchView(item.dataset.view)));
+let modalZIndex = 100;
+function openModal(id) { 
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.classList.add('active');
+  // Tambahkan z-index secara dinamis agar modal baru selalu di atas
+  el.style.zIndex = ++modalZIndex; 
+  lucide.createIcons(); 
+  populateDropdowns(); 
+}
+
+function closeModal(id) { 
+  document.getElementById(id).classList.remove('active'); 
+  
+  // Reset form enroll jika ditutup
+  if (id === 'enrollModal') {
+    const saveBtn = document.querySelector('#enrollModal .btn-primary');
+    if (saveBtn) {
+      saveBtn.textContent = 'Daftarkan Pegawai';
+      saveBtn.setAttribute('onclick', 'confirmEnroll()');
+    }
+    const typeSelect = document.getElementById('enrollType');
+    if (typeSelect) typeSelect.disabled = false;
+  }
+}
+document.querySelectorAll('.modal-overlay').forEach(o => o.addEventListener('click', e => { if (e.target === o) o.classList.remove('active'); }));
+function showToast(title, msg, type = 'success') { 
+  document.getElementById('toastTitle').textContent = title; 
+  document.getElementById('toastMsg').textContent = msg; 
+  const toast = document.getElementById('toast'); 
+  const icon = toast.querySelector('div:first-child'); 
+  if (type === 'success') { 
+    icon.style.background = 'rgba(16,185,129,0.15)'; 
+    icon.innerHTML = '<i class="w-4 h-4" data-lucide="check" style="color:var(--emerald-light)"></i>'; 
+  } else if (type === 'error') { 
+    icon.style.background = 'rgba(244,63,94,0.15)'; 
+    icon.innerHTML = '<i class="w-4 h-4" data-lucide="x" style="color:var(--rose)"></i>'; 
+  } else if (type === 'info') { 
+    icon.style.background = 'rgba(14,165,233,0.15)'; 
+    icon.innerHTML = '<i class="w-4 h-4" data-lucide="info" style="color:var(--sky)"></i>'; 
+  } 
+  toast.classList.add('show'); 
+  lucide.createIcons(); 
+  clearTimeout(window.toastTimer); 
+  window.toastTimer = setTimeout(() => toast.classList.remove('show'), 3500); 
+}
+function showConfirm(title, msg, onConfirm) { document.getElementById('confirmTitle').textContent = title; document.getElementById('confirmMsg').textContent = msg; document.getElementById('confirmOkBtn').onclick = () => { closeModal('confirmModal'); onConfirm(); }; openModal('confirmModal'); }
+function confirmLogout() { showConfirm('Keluar dari Sistem', 'Apakah Anda yakin ingin keluar dari sistem?', () => { location.reload(); }); }
+function animateValue(el, target, suffix = '') { const duration = 800, start = performance.now(); function update(t) { const progress = Math.min((t - start) / duration, 1); const eased = 1 - Math.pow(1 - progress, 3); el.innerHTML = Math.floor(target * eased) + suffix; if (progress < 1) requestAnimationFrame(update); } requestAnimationFrame(update); }
+function updateDashboardStats() { 
+  animateValue(document.getElementById('statTotalEmployees'), employees.length); 
+  document.getElementById('navEmpCount').textContent = employees.length; 
+  animateValue(document.getElementById('statTotalPrograms'), programs.length); 
+  animateValue(document.getElementById('statTotalCerts'), certificates.length); 
+  document.getElementById('certStat1').textContent = certificates.length; 
+  const totalComp = employees.reduce((s, e) => s + (e.completion || 0), 0); 
+  const avgComp = employees.length > 0 ? Math.round(totalComp / employees.length) : 0; 
+  document.getElementById('statAvgCompletion').innerHTML = `${avgComp}<span class="text-xl" style="color:var(--fg-muted)">%</span>`; 
+  const now = new Date(); 
+  document.getElementById('currentMonthYear').textContent = now.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' }); 
+  document.getElementById('currentYearLabel').textContent = now.getFullYear(); 
+  const thisMonth = now.getMonth(); const thisYear = now.getFullYear(); 
+  const monthCerts = certificates.filter(c => { const d = new Date(c.date); return d.getMonth() === thisMonth && d.getFullYear() === thisYear; }).length; 
+  document.getElementById('certStatMonth').textContent = monthCerts; 
+  const nextYear = new Date(); nextYear.setFullYear(nextYear.getFullYear() + 1); 
+  const expCerts = certificates.filter(c => new Date(c.expiry) <= nextYear).length; 
+  document.getElementById('certStatExpire').textContent = expCerts; 
+  const avgScore = certificates.length > 0 ? Math.round(certificates.reduce((s, c) => s + (c.score || 0), 0) / certificates.length) : 0; 
+  document.getElementById('certStatScore').textContent = avgScore; 
+}
+
+function renderMasterData() { 
+  const deptList = document.getElementById('deptMasterList'); 
+  if (deptList) deptList.innerHTML = departments.map(d => `<div class="flex items-center justify-between p-2 rounded-lg" style="background:rgba(255,255,255,0.02)"><span class="text-sm">${d.name}</span><button class="p-1 rounded hover:bg-white/5" onclick="deleteMaster('dept', ${d.id})"><i class="w-4 h-4" data-lucide="trash-2" style="color:var(--rose)"></i></button></div>`).join(''); 
+  const fieldList = document.getElementById('fieldMasterList'); 
+  if (fieldList) fieldList.innerHTML = fields.map(f => `<div class="flex items-center justify-between p-2 rounded-lg" style="background:rgba(255,255,255,0.02)"><span class="text-sm">${f.name}</span><button class="p-1 rounded hover:bg-white/5" onclick="deleteMaster('field', ${f.id})"><i class="w-4 h-4" data-lucide="trash-2" style="color:var(--rose)"></i></button></div>`).join(''); 
+  const posList = document.getElementById('posMasterList'); 
+  if (posList) posList.innerHTML = positions.map(p => `<div class="flex items-center justify-between p-2 rounded-lg" style="background:rgba(255,255,255,0.02)"><span class="text-sm">${p.name}</span><button class="p-1 rounded hover:bg-white/5" onclick="deleteMaster('pos', ${p.id})"><i class="w-4 h-4" data-lucide="trash-2" style="color:var(--rose)"></i></button></div>`).join(''); 
+  renderCategoryMaster(); populateDropdowns(); lucide.createIcons(); 
+}
+async function addMaster(type) { 
+  if(!checkAccess()) return; 
+  let inputId, name; 
+  if (type === 'dept') { inputId = 'newDeptName'; name = "Departemen"; } 
+  else if (type === 'field') { inputId = 'newFieldName'; name = "Bidang"; } 
+  else if (type === 'pos') { inputId = 'newPosName'; name = "Posisi"; } 
+  else if (type === 'cat') { inputId = 'newCatName'; name = "Kategori"; } 
+  const val = document.getElementById(inputId).value.trim(); 
+  if (!val) return showToast('Error', `Nama ${name} wajib diisi`, 'error'); 
+  const newId = Date.now(); 
+  const payload = { id: newId, type: type, name: val }; 
+  if (type === 'cat') payload.color = colorPalette[(categories.length) % colorPalette.length]; 
+  const { error } = await db.from('master_data').insert(payload); 
+  if (!error) { showToast('Berhasil', `${name} ditambahkan`); await syncDB(); renderMasterData(); } 
+}
+async function deleteMaster(type, id) { 
+  if(!checkAccess()) return; 
+  let name; 
+  if (type === 'dept') name = "Departemen"; 
+  else if (type === 'field') name = "Bidang"; 
+  else if (type === 'pos') name = "Posisi"; 
+  else if (type === 'cat') name = "Kategori"; 
+  showConfirm(`Hapus ${name}`, `Yakin ingin menghapus ${name} ini?`, async () => { 
+    await db.from('master_data').delete().eq('id', id); 
+    showToast('Berhasil', `${name} dihapus`); await syncDB(); renderMasterData(); 
+  }); 
+}
+function renderCategoryMaster() { 
+  const list = document.getElementById('catList'); 
+  if (!list) return; 
+  list.innerHTML = categories.map(c => { 
+    const col = colorMap[c.color] || colorMap.zinc; 
+    return `<div class="flex items-center justify-between p-2 rounded-lg" style="background:rgba(255,255,255,0.02)"><span class="badge ${col.badge}">${c.name}</span><button class="p-1 rounded hover:bg-white/5" onclick="deleteMaster('cat', ${c.id})"><i class="w-4 h-4" data-lucide="trash-2" style="color:var(--rose)"></i></button></div>`; 
+  }).join(''); 
+  lucide.createIcons(); 
+}
+function renderCategoryTabs() { 
+  const tabs = document.getElementById('categoryTabs'); 
+  if (!tabs) return; 
+  tabs.innerHTML = `<button class="tab-btn active" data-cat="all">Semua</button>` + categories.map(c => `<button class="tab-btn" data-cat="${c.name}">${c.name}</button>`).join(''); 
+  document.querySelectorAll('#categoryTabs button').forEach(btn => btn.addEventListener('click', () => { 
+    document.querySelectorAll('#categoryTabs button').forEach(b => b.classList.remove('active')); 
+    btn.classList.add('active'); renderPrograms(btn.dataset.cat); 
+  })); 
+}
+function populateFilterDept() { 
+  const filter = document.getElementById('filterDept'); 
+  if (!filter) return; 
+  filter.innerHTML = `<option value="">Semua Departemen</option>` + departments.map(d => `<option>${d.name}</option>`).join(''); 
+}
+function populateDropdowns() { 
+  const empSelect = document.getElementById('certEmp'); 
+  const progSelect1 = document.getElementById('certProgram'); 
+  const progSelect2 = document.getElementById('schProgram'); 
+  const enrollSelect = document.getElementById('enrollProgramInternal'); 
+  const catSelect = document.getElementById('trCategory'); 
+  const empDeptSelect = document.getElementById('empDept'); 
+  const empFieldSelect = document.getElementById('empField'); 
+  const empPosSelect = document.getElementById('empPosition'); 
+  const progOptions = programs.map(p => `<option value="${p.title}">${p.title}</option>`).join(''); 
+  const empOptions = employees.map(e => `<option>${e.name}</option>`).join(''); 
+  const catOptions = categories.map(c => `<option>${c.name}</option>`).join(''); 
+  const deptOptions = departments.map(d => `<option>${d.name}</option>`).join(''); 
+  const fieldOptions = fields.map(f => `<option>${f.name}</option>`).join(''); 
+  const posOptions = positions.map(p => `<option>${p.name}</option>`).join(''); 
+  if(empSelect) empSelect.innerHTML = empOptions; 
+  if(progSelect1) progSelect1.innerHTML = progOptions; 
+  if(progSelect2) progSelect2.innerHTML = progOptions; 
+  if(enrollSelect) enrollSelect.innerHTML = progOptions; 
+  if(catSelect) catSelect.innerHTML = catOptions; 
+  if(empDeptSelect) empDeptSelect.innerHTML = deptOptions; 
+  if(empFieldSelect) empFieldSelect.innerHTML = fieldOptions; 
+  if(empPosSelect) empPosSelect.innerHTML = posOptions; 
+}
+
+function renderUpcomingList() {
+  const list = document.getElementById('upcomingList');
+  if (!list) return;
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const upcoming = [...schedules].filter(s => new Date(s.date + 'T00:00:00') >= today).sort((a, b) => new Date(a.date) - new Date(b.date)).slice(0, 5);
+  if (upcoming.length === 0) { 
+    list.innerHTML = `<div class="text-center py-6 text-xs" style="color:var(--fg-muted)">Tidak ada jadwal pelatihan mendatang</div>`; 
+    return; 
+  }
+  list.innerHTML = upcoming.map(s => {
+    const d = new Date(s.date + 'T00:00:00');
+    return `<div class="flex items-center gap-4 p-3 rounded-xl hover:bg-white/[0.02] transition cursor-pointer" onclick="showSchDetail(${s.id})"><div class="flex-shrink-0 w-12 h-12 rounded-xl text-center flex flex-col items-center justify-center" style="background:rgba(16,185,129,0.08); border:1px solid rgba(16,185,129,0.15)"><div class="text-[10px] font-medium leading-none" style="color:var(--emerald-light)">${d.toLocaleDateString('id-ID', { month: 'short' })}</div><div class="text-lg font-bold leading-tight">${d.getDate()}</div></div><div class="flex-1 min-w-0"><div class="font-medium text-sm truncate">${s.title}</div><div class="text-xs mt-0.5 flex items-center gap-2" style="color:var(--fg-muted)"><i class="w-3 h-3" data-lucide="clock"></i>${s.time} · ${s.duration}<span>·</span><i class="w-3 h-3" data-lucide="map-pin"></i>${s.location}</div></div><div class="text-right"><div class="text-xs font-medium">${s.attendees}/${s.total}</div><div class="text-[10px]" style="color:var(--fg-subtle)">peserta</div></div></div>`;
+  }).join('');
+  lucide.createIcons();
+}
+
+function renderActivityList() {
+  const list = document.getElementById('activityList');
+  if (!list) return;
+  const recentLogs = [...trainingLogs].sort((a, b) => b.id - a.id).slice(0, 5);
+  if (recentLogs.length === 0) { 
+    list.innerHTML = `<div class="text-center py-6 text-xs" style="color:var(--fg-muted)">Belum ada aktivitas pelatihan</div>`; 
+    return; 
+  }
+  list.innerHTML = recentLogs.map(log => {
+    const emp = employees.find(e => e.id === log.emp_id);
+    const avatar = emp ? emp.avatar : 1;
+    const initials = log.emp_name.split(' ').map(n => n[0]).join('').substring(0, 2);
+    const isExternal = log.source === 'external';
+    const actionText = isExternal ? 'mendaftar pelatihan eksternal' : 'mendaftar pelatihan internal';
+    const logDate = new Date(log.log_date + 'T00:00:00');
+    const today = new Date(); today.setHours(0,0,0,0);
+    const timeDiff = today - logDate;
+    const daysAgo = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
+    let timeText = '';
+    if (daysAgo === 0) timeText = 'Hari ini';
+    else if (daysAgo === 1) timeText = 'Kemarin';
+    else timeText = `${daysAgo} hari lalu`;
+    const hoursText = log.training_hours ? ` · ${log.training_hours} JP` : '';
+    const extInfo = isExternal && log.location ? ` · ${log.location}` : '';
+    return `<div class="flex gap-3"><div class="avatar avatar-${avatar} w-8 h-8 text-[11px] flex-shrink-0">${initials}</div><div class="flex-1 min-w-0"><div class="text-xs leading-relaxed"><span class="font-semibold">${log.emp_name}</span><span style="color:var(--fg-muted)"> ${actionText} </span><span class="font-medium" style="color:${isExternal ? 'var(--sky)' : 'var(--emerald-light)'}">${log.program_name}</span></div><div class="text-[11px] mt-1" style="color:var(--fg-subtle)">${timeText}${hoursText}${extInfo}</div></div></div>`;
+  }).join('');
+}
+
+function renderNotifPanel() {
+  const list = document.getElementById('notifList');
+  if (!list) return;
+  let html = '';
+  const today = new Date(); today.setHours(0,0,0,0);
+  const upcomingSchedules = schedules.filter(s => {
+    const d = new Date(s.date + 'T00:00:00');
+    const diff = (d - today) / (1000 * 60 * 60 * 24);
+    return diff >= 0 && diff <= 3;
+  }).sort((a,b) => new Date(a.date) - new Date(b.date));
+
+  upcomingSchedules.forEach(s => {
+    const d = new Date(s.date + 'T00:00:00');
+    html += `<div class="card p-3 flex items-start gap-3 cursor-pointer hover:bg-white/[0.02]" onclick="switchView('schedule'); closeAllPanels();"><div class="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style="background:rgba(16,185,129,0.1)"><i class="w-4 h-4" data-lucide="calendar-clock" style="color:var(--emerald-light)"></i></div><div class="flex-1 min-w-0"><div class="text-sm font-medium">Sesi Pelatihan Mendatang</div><div class="text-xs mt-0.5" style="color:var(--fg-muted)">${s.title} pada ${d.toLocaleDateString('id-ID', {day:'numeric', month:'short'})}</div></div></div>`;
+  });
+
+  const expiringCerts = certificates.filter(c => {
+    const d = new Date(c.expiry + 'T00:00:00');
+    const diff = (d - today) / (1000 * 60 * 60 * 24);
+    return diff >= 0 && diff <= 30;
+  });
+
+  expiringCerts.forEach(c => {
+    const d = new Date(c.expiry + 'T00:00:00');
+    html += `<div class="card p-3 flex items-start gap-3 cursor-pointer hover:bg-white/[0.02]" onclick="switchView('certificates'); closeAllPanels();"><div class="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style="background:rgba(245,158,11,0.1)"><i class="w-4 h-4" data-lucide="alert-triangle" style="color:var(--amber)"></i></div><div class="flex-1 min-w-0"><div class="text-sm font-medium">Sertifikat Akan Kadaluarsa</div><div class="text-xs mt-0.5" style="color:var(--fg-muted)">Sertifikat ${c.program} (${c.name}) kadaluarsa pada ${d.toLocaleDateString('id-ID', {day:'numeric', month:'short'})}</div></div></div>`;
+  });
+
+  if (html === '') html = `<div class="text-center py-10 text-xs" style="color:var(--fg-muted)">Tidak ada notifikasi baru</div>`;
+  list.innerHTML = html;
+  lucide.createIcons();
+}
+
+function renderMsgPanel() {
+  const list = document.getElementById('msgList');
+  if (!list) return;
+  const dummyMsgs = [
+    { name: 'Sistem PelatihanPro', role: 'Notifikasi Sistem', text: 'Selamat datang di dashboard! Pastikan data pegawai selalu diperbarui.', time: '1 jam lalu', avatar: 7, initials: 'SP' },
+    { name: 'Budi Santoso', role: 'Staff IT', text: 'Haloo, apakah jadwal pelatihan AWS sudah final?', time: '3 jam lalu', avatar: 1, initials: 'BS' },
+    { name: 'Admin', role: 'HRD', text: 'Terima kasih atas bantuannya mendaftarkan pegawai saya.', time: 'Kemarin', avatar: 5, initials: 'CL' }
+  ];
+  list.innerHTML = dummyMsgs.map(m => `<div class="card p-3 flex items-start gap-3 cursor-pointer hover:bg-white/[0.02]" onclick="showToast('Pesan', 'Fitur pesan sedang dalam pengembangan', 'info')"><div class="avatar avatar-${m.avatar} w-9 h-9 text-xs flex-shrink-0">${m.initials}</div><div class="flex-1 min-w-0"><div class="flex items-center justify-between"><div class="text-sm font-semibold truncate">${m.name}</div><div class="text-[10px]" style="color:var(--fg-subtle)">${m.time}</div></div><div class="text-xs mt-0.5" style="color:var(--fg-muted)">${m.role}</div><div class="text-xs mt-1.5 truncate" style="color:var(--fg)">${m.text}</div></div></div>`).join('');
+  lucide.createIcons();
+}
+
+function renderEmployees() { 
+  const tbody = document.getElementById('employeeTableBody'); 
+  const totalPages = Math.ceil(filteredEmployees.length / itemsPerPage); 
+  if (currentPage > totalPages && totalPages > 0) currentPage = 1; 
+  if (totalPages === 0) currentPage = 1; 
+  const start = (currentPage - 1) * itemsPerPage; 
+  const pageData = filteredEmployees.slice(start, start + itemsPerPage); 
+  document.getElementById('empCount').textContent = filteredEmployees.length; 
+  document.getElementById('empTotal').textContent = employees.length; 
+  if (pageData.length === 0) { 
+    tbody.innerHTML = `<tr><td colspan="11"><div class="text-center py-10" style="color:var(--fg-muted)">Tidak ada pegawai ditemukan</div></td></tr>`; 
+  } else { 
+    tbody.innerHTML = pageData.map(e => `
+      <tr>
+        <td><input type="checkbox" class="custom-checkbox row-check"></td>
+        <td style="color:var(--fg-muted); font-size: 12px;">${e.nip || '-'}</td>
+        <td>
+          <div class="flex items-center gap-3">
+            <div class="avatar avatar-${e.avatar} w-9 h-9 text-xs">${e.initials}</div>
+            <div>
+              <div class="font-medium cursor-pointer hover:text-emerald-300" onclick="showEmpDetail(${e.id})">${e.name}</div>
+              <div class="text-xs" style="color:var(--fg-muted)">${e.email}</div>
+            </div>
+          </div>
+        </td>
+        <td><span class="badge badge-zinc">${e.dept}</span></td>
+        <td style="color:var(--fg-muted)">${e.field}</td>
+        <td style="color:var(--fg-muted)">${e.position}</td>
+        <td class="text-center font-medium">${e.trainings}</td>
+        <td class="text-center font-medium" style="color:var(--emerald-light)">${e.training_hours || 0}</td>
+        <td>
+          <div class="flex items-center gap-2">
+            <div class="progress-bar w-24"><div class="progress-fill" style="width:${e.completion}%"></div></div>
+            <span class="text-xs font-medium" style="color:var(--fg-muted)">${e.completion}%</span>
+          </div>
+        </td>
+        <td>${e.status === 'active' ? '<span class="badge badge-emerald"><span class="w-1.5 h-1.5 rounded-full" style="background:var(--emerald)"></span>Aktif</span>' : ''}${e.status === 'training' ? '<span class="badge badge-amber"><span class="w-1.5 h-1.5 rounded-full pulse-dot" style="background:var(--amber)"></span>Pelatihan</span>' : ''}${e.status === 'completed' ? '<span class="badge badge-sky">Selesai</span>' : ''}</td>
+        <td style="position:relative">
+          <button class="p-1.5 rounded-lg hover:bg-white/5" onclick="event.stopPropagation(); document.getElementById('menu-${e.id}').classList.toggle('open')"><i class="w-4 h-4" data-lucide="more-vertical" style="color:var(--fg-muted)"></i></button>
+          <div class="dropdown-menu" id="menu-${e.id}">
+            <div class="dropdown-item" onclick="showEmpDetail(${e.id})"><i class="w-4 h-4" data-lucide="eye"></i>Lihat Detail</div>
+            <div class="dropdown-item" onclick="openEditEmployeeModal(${e.id})"><i class="w-4 h-4" data-lucide="edit-2"></i>Edit Pegawai</div>
+            <div class="dropdown-item" onclick="openEnrollModal(${e.id})"><i class="w-4 h-4" data-lucide="graduation-cap"></i>Daftar Pelatihan</div>
+            <div class="dropdown-item danger" onclick="deleteEmployee(${e.id})"><i class="w-4 h-4" data-lucide="trash-2"></i>Hapus</div>
+          </div>
+        </td>
+      </tr>
+    `).join(''); 
+  } 
+  renderPagination(totalPages); 
+  lucide.createIcons(); 
+}
+function renderPagination(totalPages) { 
+  const pag = document.getElementById('pagination'); 
+  if (totalPages <= 1) { pag.innerHTML = ''; return; } 
+  let html = `<button class="btn-ghost w-8 h-8 rounded-lg flex items-center justify-center" ${currentPage === 1 ? 'disabled style="opacity:0.4;cursor:not-allowed"' : ''} onclick="goToPage(${currentPage - 1})"><i class="w-4 h-4" data-lucide="chevron-left"></i></button>`; 
+  for (let i = 1; i <= totalPages; i++) html += `<button class="w-8 h-8 rounded-lg text-sm font-medium" style="${i === currentPage ? 'background:var(--emerald);color:white' : 'background:rgba(255,255,255,0.04);border:1px solid var(--border);color:var(--fg)'}" onclick="goToPage(${i})">${i}</button>`; 
+  html += `<button class="btn-ghost w-8 h-8 rounded-lg flex items-center justify-center" ${currentPage === totalPages ? 'disabled style="opacity:0.4;cursor:not-allowed"' : ''} onclick="goToPage(${currentPage + 1})"><i class="w-4 h-4" data-lucide="chevron-right"></i></button>`; 
+  pag.innerHTML = html; 
+  lucide.createIcons(); 
+}
+function goToPage(page) { currentPage = page; renderEmployees(); }
+function filterEmployees() { 
+  const search = document.getElementById('employeeSearch').value.toLowerCase(); 
+  const dept = document.getElementById('filterDept').value; 
+  const status = document.getElementById('filterStatus').value; 
+  filteredEmployees = employees.filter(e => (!dept || e.dept === dept) && (!status || e.status === status) && (!search || e.name.toLowerCase().includes(search) || e.email.toLowerCase().includes(search) || (e.nip && e.nip.includes(search)))); 
+  currentPage = 1; renderEmployees(); 
+}
+document.getElementById('employeeSearch')?.addEventListener('input', filterEmployees);
+document.getElementById('filterDept')?.addEventListener('change', filterEmployees);
+document.getElementById('filterStatus')?.addEventListener('change', filterEmployees);
+
+function showEmpDetail(id) { 
+  const e = employees.find(x => x.id === id); 
+  if (!e) return; 
+  const empLogs = trainingLogs.filter(l => l.emp_id === id).sort((a, b) => b.id - a.id);
+  window.currentEmpLogs = empLogs; 
+  
+  const years = [...new Set(empLogs.map(log => new Date(log.log_date + 'T00:00:00').getFullYear()))];
+  
+  document.getElementById('empDetailContent').innerHTML = `
+    <div class="flex items-center gap-4 mb-6">
+      <div class="avatar avatar-${e.avatar} w-16 h-16 text-xl">${e.initials}</div>
+      <div>
+        <h4 class="font-display text-2xl font-bold">${e.name}</h4>
+        <p style="color:var(--fg-muted)">${e.nip || '-'} · ${e.position} · ${e.field} · ${e.dept}</p>
+      </div>
+    </div>
+    <div class="grid grid-cols-3 gap-4 mb-6">
+      <div class="card p-4"><div class="text-xs" style="color:var(--fg-muted)">Email</div><div class="text-sm font-medium mt-1">${e.email}</div></div>
+      <div class="card p-4"><div class="text-xs" style="color:var(--fg-muted)">Total Pelatihan (Keseluruhan)</div><div class="text-sm font-medium mt-1">${e.trainings} program</div></div>
+      <div class="card p-4"><div class="text-xs" style="color:var(--fg-muted)">Total JP (Keseluruhan)</div><div class="text-sm font-medium mt-1" style="color:var(--emerald-light)">${e.training_hours || 0} JP</div></div>
+    </div>
+    <div class="mb-6">
+      <div class="flex justify-between text-sm mb-2">
+        <span style="color:var(--fg-muted)">Tingkat Penyelesaian</span>
+        <span class="font-bold" style="color:var(--emerald-light)">${e.completion}%</span>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" style="width:${e.completion}%"></div></div>
+    </div>
+    
+    <div class="mt-2">
+      <div class="flex items-center justify-between mb-4">
+        <h5 class="text-sm font-semibold" style="color:var(--fg-muted)">Riwayat Pelatihan</h5>
+        ${
+          years.length > 0 ? `
+          <select class="input-field py-1.5 px-3 text-xs w-auto" onchange="renderFilteredEmpLogs(this.value)">
+            <option value="all">Semua Tahun</option>
+            ${years.map(y => `<option value="${y}">${y}</option>`).join('')}
+          </select>
+          ` : ''
+        }
+      </div>
+      <div id="empLogsContainer"></div>
+    </div>
+    
+    ${currentUser === 'boss' ? '' : `<div class="flex gap-2 mt-6"><button class="btn-primary flex-1 py-2 rounded-lg text-sm flex items-center justify-center gap-2" onclick="closeModal('empDetailModal'); openEnrollModal(${e.id})"><i class="w-4 h-4" data-lucide="graduation-cap"></i>Daftar Pelatihan</button><button class="btn-ghost flex-1 py-2 rounded-lg text-sm flex items-center justify-center gap-2" onclick="closeModal('empDetailModal'); openEditEmployeeModal(${e.id})"><i class="w-4 h-4" data-lucide="edit-2"></i>Edit Data</button></div>`}
+  `; 
+  openModal('empDetailModal'); 
+  lucide.createIcons();
+  renderFilteredEmpLogs('all');
+}
+
+function renderFilteredEmpLogs(year) {
+  const container = document.getElementById('empLogsContainer');
+  if (!container) return;
+  
+  let logs = window.currentEmpLogs || [];
+  if (year !== 'all') {
+    logs = logs.filter(log => new Date(log.log_date + 'T00:00:00').getFullYear() == year);
+  }
+  
+  if (logs.length === 0) {
+    container.innerHTML = `<div class="text-center py-6 text-xs" style="color:var(--fg-muted)">Belum ada riwayat pelatihan untuk tahun ini</div>`;
+    return;
+  }
+  
+  const totalJp = logs.reduce((sum, log) => sum + (log.training_hours || 0), 0);
+  
+  let html = `
+    <div class="grid grid-cols-2 gap-3 mb-4">
+      <div class="card p-3 flex items-center gap-3" style="background:rgba(255,255,255,0.02)">
+        <div class="w-9 h-9 rounded-lg flex items-center justify-center" style="background:rgba(16,185,129,0.1)">
+          <i class="w-4 h-4" data-lucide="layers" style="color:var(--emerald-light)"></i>
+        </div>
+        <div>
+          <div class="text-[11px]" style="color:var(--fg-muted)">${year === 'all' ? 'Total Pelatihan' : 'Pelatihan Tahun ' + year}</div>
+          <div class="text-sm font-semibold">${logs.length} Program</div>
+        </div>
+      </div>
+      <div class="card p-3 flex items-center gap-3" style="background:rgba(255,255,255,0.02)">
+        <div class="w-9 h-9 rounded-lg flex items-center justify-center" style="background:rgba(245,158,11,0.1)">
+          <i class="w-4 h-4" data-lucide="clock" style="color:var(--amber)"></i>
+        </div>
+        <div>
+          <div class="text-[11px]" style="color:var(--fg-muted)">${year === 'all' ? 'Total JP' : 'JP Tahun ' + year}</div>
+          <div class="text-sm font-semibold">${totalJp} Jam Pelatihan</div>
+        </div>
+      </div>
+    </div>
+    <div class="space-y-2 max-h-[300px] overflow-y-auto pr-1">
+  `;
+  
+  logs.forEach(log => {
+    const logDate = new Date(log.log_date + 'T00:00:00');
+    const isExternal = log.source === 'external';
+    const iconColor = isExternal ? 'var(--sky)' : 'var(--emerald-light)';
+    const bgColor = isExternal ? 'rgba(14,165,233,0.1)' : 'rgba(16,185,129,0.1)';
+    const iconName = isExternal ? 'external-link' : 'book-open';
+    let detailParts = [isExternal ? 'Eksternal' : 'Internal'];
+    if (log.training_hours) detailParts.push(`${log.training_hours} JP`);
+    detailParts.push(logDate.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }));
+    if (isExternal && log.execution_date) {
+      const execDate = new Date(log.execution_date + 'T00:00:00');
+      detailParts.push('Pelaksanaan: ' + execDate.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }));
+    }
+    if (isExternal && log.execution_time) detailParts.push(log.execution_time);
+    if (isExternal && log.location) detailParts.push(log.location);
+    if (isExternal && log.vendor) detailParts.push(log.vendor);
+    
+    const isManual = log.program_name === 'Penyesuaian Manual JP' || log.program_name === 'Saldo Awal JP';
+    
+    html += `
+      <div class="flex items-start gap-3 p-3 rounded-lg" style="background:rgba(255,255,255,0.02)">
+        <div class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style="background:${bgColor}">
+          <i class="w-4 h-4" data-lucide="${iconName}" style="color:${iconColor}"></i>
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center justify-between">
+            <div class="text-sm font-medium">${log.program_name}</div>
+            ${!isManual ? `
+            <div class="flex gap-1">
+              <button class="p-1 rounded hover:bg-white/10" onclick="openEditLogModal(${log.id})" title="Edit Pelatihan">
+                <i class="w-3.5 h-3.5" data-lucide="edit-2" style="color:var(--fg-muted)"></i>
+              </button>
+              <button class="p-1 rounded hover:bg-white/10" onclick="deleteTrainingLog(${log.id})" title="Hapus Pelatihan">
+                <i class="w-3.5 h-3.5" data-lucide="trash-2" style="color:var(--rose)"></i>
+              </button>
+            </div>
+            ` : ''}
+          </div>
+          <div class="text-xs mt-0.5" style="color:var(--fg-muted)">${detailParts.join(' · ')}</div>
+        </div>
+      </div>
+    `;
+  });
+  
+  html += `</div>`;
+  container.innerHTML = html;
+  lucide.createIcons();
+}
+
+function openAddEmployeeModal() { 
+  if(!checkAccess()) return; 
+  document.getElementById('empModalTitle').textContent = "Tambah Pegawai"; 
+  document.getElementById('empId').value = ''; 
+  document.getElementById('empNip').value = ''; 
+  document.getElementById('empFirst').value = ''; 
+  document.getElementById('empLast').value = ''; 
+  document.getElementById('empEmail').value = ''; 
+  document.getElementById('empTrainings').value = 0; 
+  document.getElementById('empTrainingHours').value = 0; 
+  document.getElementById('empCompletion').value = 0; 
+  document.getElementById('empStatus').value = 'active'; 
+  openModal('employeeModal'); 
+}
+function openEditEmployeeModal(id) { 
+  if(!checkAccess()) return; 
+  const e = employees.find(x => x.id === id); 
+  if (!e) return; 
+  document.getElementById('empModalTitle').textContent = "Edit Pegawai"; 
+  document.getElementById('empId').value = e.id; 
+  document.getElementById('empNip').value = e.nip || ''; 
+  const nameParts = e.name.split(' '); 
+  document.getElementById('empFirst').value = nameParts[0] || ''; 
+  document.getElementById('empLast').value = nameParts.slice(1).join(' ') || ''; 
+  document.getElementById('empEmail').value = e.email; 
+  openModal('employeeModal'); 
+  document.getElementById('empDept').value = e.dept; 
+  document.getElementById('empField').value = e.field; 
+  document.getElementById('empPosition').value = e.position; 
+  document.getElementById('empTrainings').value = e.trainings; 
+  document.getElementById('empTrainingHours').value = e.training_hours || 0; 
+  document.getElementById('empCompletion').value = e.completion; 
+  document.getElementById('empStatus').value = e.status; 
+}
+
+async function saveEmployee() { 
+  if(!checkAccess()) return; 
+  const id = document.getElementById('empId').value; 
+  const nip = document.getElementById('empNip').value.trim(); 
+  const first = document.getElementById('empFirst').value.trim(); 
+  const last = document.getElementById('empLast').value.trim(); 
+  const email = document.getElementById('empEmail').value.trim(); 
+  if (!nip || !first || !last || !email) { showToast('Error', 'NIP, Nama, dan email wajib diisi', 'error'); return; } 
+  const name = `${first} ${last}`; 
+  const initials = (first[0] + last[0]).toUpperCase(); 
+  
+  const newTrainingHours = parseInt(document.getElementById('empTrainingHours').value) || 0;
+  const newTrainingsCount = parseInt(document.getElementById('empTrainings').value) || 0;
+
+  const payload = { 
+    nip, name, email, 
+    dept: document.getElementById('empDept').value, 
+    field: document.getElementById('empField').value, 
+    position: document.getElementById('empPosition').value, 
+    trainings: newTrainingsCount, 
+    training_hours: newTrainingHours, 
+    completion: Math.min(100, parseInt(document.getElementById('empCompletion').value) || 0), 
+    status: document.getElementById('empStatus').value, 
+    initials 
+  }; 
+
+  if (id) { 
+    const e = employees.find(x => x.id == id);
+    const { error } = await db.from('employees').update(payload).eq('id', id); 
+    
+    if (!error) {
+      showToast('Berhasil', `Data ${name} diperbarui`); 
+
+      const empLogs = trainingLogs.filter(l => String(l.emp_id) === String(id));
+      const isManualLog = (l) => l.program_name === 'Penyesuaian Manual JP' || l.program_name === 'Saldo Awal JP';
+      const manualLogs = empLogs.filter(l => isManualLog(l));
+      const enrollmentLogs = empLogs.filter(l => !isManualLog(l));
+      
+      const enrollmentTotal = enrollmentLogs.reduce((s, l) => s + (l.training_hours || 0), 0);
+      const manualAdjustment = newTrainingHours - enrollmentTotal;
+      
+      const primaryManualLog = manualLogs[0];
+      
+      for (let i = 1; i < manualLogs.length; i++) {
+        await db.from('training_logs').delete().eq('id', manualLogs[i].id);
+      }
+
+      if (manualAdjustment > 0) {
+        if (primaryManualLog) {
+          await db.from('training_logs').update({
+            training_hours: manualAdjustment,
+            log_date: new Date().toISOString().split('T')[0],
+            program_name: 'Penyesuaian Manual JP'
+          }).eq('id', primaryManualLog.id);
+        } else {
+          await db.from('training_logs').insert({
+            id: Date.now(),
+            emp_id: parseInt(id),
+            emp_name: name,
+            program_name: 'Penyesuaian Manual JP',
+            source: 'internal',
+            log_date: new Date().toISOString().split('T')[0],
+            training_hours: manualAdjustment
+          });
+        }
+      } else {
+        if (primaryManualLog) {
+          await db.from('training_logs').delete().eq('id', primaryManualLog.id);
+        }
+      }
+    }
+  } else { 
+    payload.id = Date.now(); 
+    payload.avatar = (payload.id % 8) + 1; 
+    const { error } = await db.from('employees').insert(payload); 
+    if (!error) {
+      showToast('Berhasil', `${name} ditambahkan`); 
+      if (newTrainingHours > 0) {
+        await db.from('training_logs').insert({
+          id: Date.now() + 1,
+          emp_id: payload.id,
+          emp_name: name,
+          program_name: 'Saldo Awal JP',
+          source: 'internal',
+          log_date: new Date().toISOString().split('T')[0],
+          training_hours: newTrainingHours
+        });
+      }
+    }
+  } 
+  closeModal('employeeModal'); 
+  await syncDB(); 
+}
+
+async function deleteEmployee(id) { 
+  if(!checkAccess()) return; 
+  const e = employees.find(x => x.id === id); 
+  if (!e) return; 
+  showConfirm('Hapus Pegawai', `Hapus ${e.name}?`, async () => { 
+    await db.from('employees').delete().eq('id', id); 
+    await db.from('training_logs').delete().eq('emp_id', id); 
+    showToast('Berhasil', `${e.name} dihapus`); await syncDB(); 
+  }); 
+}
+
+function openEnrollModal(id) { 
+  if(!checkAccess()) return; 
+  const e = employees.find(x => x.id === id); 
+  if (!e) return; 
+  document.getElementById('enrollEmpId').value = id; 
+  document.getElementById('enrollSubTitle').textContent = `Pilih program untuk ${e.name}`; 
+  document.getElementById('enrollType').value = 'internal'; 
+  document.getElementById('enrollType').disabled = false; 
+  document.getElementById('enrollProgramExternal').value = ''; 
+  document.getElementById('enrollVendor').value = ''; 
+  document.getElementById('enrollExtDate').value = ''; 
+  document.getElementById('enrollExtTime').value = '08:00'; 
+  document.getElementById('enrollExtLocation').value = ''; 
+  document.getElementById('enrollTrainingHours').value = 0; 
+  document.getElementById('enrollLogId').value = ''; 
+  const saveBtn = document.querySelector('#enrollModal .btn-primary');
+  saveBtn.textContent = 'Daftarkan Pegawai';
+  saveBtn.setAttribute('onclick', 'confirmEnroll()');
+  openModal('enrollModal'); 
+  toggleEnrollType(); 
+}
+
+function toggleEnrollType() { 
+  const type = document.getElementById('enrollType').value; 
+  if (type === 'internal') { 
+    document.getElementById('internalWrap').classList.remove('hidden'); 
+    document.getElementById('externalWrap').classList.add('hidden'); 
+    autoFillInternalHours();
+  } else { 
+    document.getElementById('internalWrap').classList.add('hidden'); 
+    document.getElementById('externalWrap').classList.remove('hidden'); 
+  } 
+}
+
+function autoFillInternalHours() {
+  const programName = document.getElementById('enrollProgramInternal').value;
+  const prog = programs.find(p => p.title === programName);
+  if (prog) {
+    const hours = parseInt(prog.duration) || 0;
+    document.getElementById('enrollTrainingHours').value = hours;
+  }
+}
+
+async function confirmEnroll() { 
+  if(!checkAccess()) return; 
+  const id = parseInt(document.getElementById('enrollEmpId').value); 
+  const e = employees.find(x => x.id === id); 
+  if (!e) return; 
+  const type = document.getElementById('enrollType').value; 
+  const trainingHours = parseInt(document.getElementById('enrollTrainingHours').value) || 0;
+  
+  let programName = ''; 
+  let sourceType = 'internal'; 
+  let extDate = null, extTime = null, extLocation = null, vendor = null;
+  
+  if (type === 'internal') { 
+    programName = document.getElementById('enrollProgramInternal').value; 
+    if (!programName) { showToast('Error', 'Program internal wajib dipilih', 'error'); return; }
+    const prog = programs.find(p => p.title === programName); 
+    if (prog && prog.enrolled < prog.total) { 
+      prog.enrolled++; 
+      await db.from('programs').update({ enrolled: prog.enrolled }).eq('id', prog.id); 
+    } else if (prog) { 
+      showToast('Kuota Penuh', `Program ${programName} sudah penuh`, 'error'); 
+      return; 
+    } 
+  } else { 
+    programName = document.getElementById('enrollProgramExternal').value.trim(); 
+    sourceType = 'external'; 
+    vendor = document.getElementById('enrollVendor').value.trim(); 
+    extDate = document.getElementById('enrollExtDate').value; 
+    extTime = document.getElementById('enrollExtTime').value; 
+    extLocation = document.getElementById('enrollExtLocation').value.trim(); 
+    if (!programName) { showToast('Error', 'Nama program eksternal wajib diisi', 'error'); return; } 
+    if (!extDate) { showToast('Error', 'Tanggal pelaksanaan wajib diisi', 'error'); return; } 
+    if (!extLocation) { showToast('Error', 'Tempat pelaksanaan wajib diisi', 'error'); return; } 
+  } 
+  
+  const logId = Date.now();
+  const logPayload = {
+    id: logId,
+    emp_id: id,
+    emp_name: e.name,
+    program_name: programName,
+    source: sourceType,
+    log_date: new Date().toISOString().split('T')[0],
+    training_hours: trainingHours,
+    execution_date: extDate,
+    execution_time: extTime,
+    location: extLocation,
+    vendor: vendor
+  };
+  await db.from('training_logs').insert(logPayload);
+  
+  e.trainings++; 
+  e.status = 'training'; 
+  e.training_hours = (e.training_hours || 0) + trainingHours;
+  e.completion = Math.min(100, e.completion + Math.floor(Math.random() * 15) + 5); 
+  await db.from('employees').update({ 
+    trainings: e.trainings, 
+    status: e.status, 
+    completion: e.completion,
+    training_hours: e.training_hours
+  }).eq('id', id); 
+  
+  closeModal('enrollModal'); 
+  await syncDB(); 
+  showToast('Berhasil', `${e.name} terdaftar di ${programName} (${trainingHours} JP ditambahkan)`); 
+}
+
+function openEditLogModal(logId) {
+  if(!checkAccess()) return;
+  const log = trainingLogs.find(l => l.id == logId);
+  if (!log) return;
+  
+  const emp = employees.find(e => e.id === log.emp_id);
+  if (!emp) return;
+
+  document.getElementById('enrollEmpId').value = emp.id;
+  document.getElementById('enrollSubTitle').textContent = `Edit pelatihan untuk ${emp.name}`;
+  document.getElementById('enrollType').value = log.source === 'external' ? 'external' : 'internal';
+  document.getElementById('enrollType').disabled = true; 
+  
+  // Simpan dulu data ke variabel sementara
+  const extData = {
+    programName: log.program_name || '',
+    vendor: log.vendor || '',
+    extDate: log.execution_date || '',
+    extTime: log.execution_time || '08:00',
+    extLocation: log.location || ''
+  };
+  const intProgramName = log.program_name || '';
+  const trainingHours = log.training_hours || 0;
+  
+  document.getElementById('enrollLogId').value = logId;
+
+  const saveBtn = document.querySelector('#enrollModal .btn-primary');
+  saveBtn.textContent = 'Update Pelatihan';
+  saveBtn.setAttribute('onclick', 'confirmEditLog()');
+  
+  openModal('enrollModal'); // Di dalam sini dropdown akan direset/diisi ulang
+  toggleEnrollType();
+  
+  // Setelah modal terbuka & dropdown terisi, BARULAH kita set nilainya agar tidak tertimpa
+  if (log.source === 'external') {
+    document.getElementById('enrollProgramExternal').value = extData.programName;
+    document.getElementById('enrollVendor').value = extData.vendor;
+    document.getElementById('enrollExtDate').value = extData.extDate;
+    document.getElementById('enrollExtTime').value = extData.extTime;
+    document.getElementById('enrollExtLocation').value = extData.extLocation;
+  } else {
+    document.getElementById('enrollProgramInternal').value = intProgramName;
+  }
+  document.getElementById('enrollTrainingHours').value = trainingHours;
+}
+
+async function confirmEditLog() {
+  if(!checkAccess()) return;
+  const logId = document.getElementById('enrollLogId').value;
+  const log = trainingLogs.find(l => l.id == logId);
+  if (!log) return;
+
+  const oldHours = log.training_hours || 0;
+  const type = document.getElementById('enrollType').value;
+  const newHours = parseInt(document.getElementById('enrollTrainingHours').value) || 0;
+  
+  let updatedData = {
+    training_hours: newHours,
+    log_date: new Date().toISOString().split('T')[0]
+  };
+  
+  if (type === 'external') {
+    updatedData.program_name = document.getElementById('enrollProgramExternal').value.trim();
+    updatedData.vendor = document.getElementById('enrollVendor').value.trim();
+    updatedData.execution_date = document.getElementById('enrollExtDate').value;
+    updatedData.execution_time = document.getElementById('enrollExtTime').value;
+    updatedData.location = document.getElementById('enrollExtLocation').value.trim();
+  } else {
+    updatedData.program_name = document.getElementById('enrollProgramInternal').value;
+  }
+  
+  const { error } = await db.from('training_logs').update(updatedData).eq('id', logId);
+  
+  if (!error) {
+    const emp = employees.find(e => e.id === log.emp_id);
+    if (emp) {
+      emp.training_hours = Math.max(0, (emp.training_hours || 0) - oldHours + newHours);
+      await db.from('employees').update({ training_hours: emp.training_hours }).eq('id', emp.id);
+    }
+    
+    showToast('Berhasil', 'Data pelatihan diperbarui');
+    closeModal('enrollModal');
+    await syncDB();
+    showEmpDetail(log.emp_id); 
+  } else {
+    showToast('Error', 'Gagal memperbarui data', 'error');
+  }
+}
+
+async function deleteTrainingLog(logId) {
+  if(!checkAccess()) return;
+  showConfirm('Hapus Riwayat Pelatihan', 'Yakin ingin menghapus riwayat pelatihan ini?', async () => {
+    const log = trainingLogs.find(l => l.id == logId);
+    if (!log) return;
+    
+    const emp = employees.find(e => e.id === log.emp_id);
+    if (emp) {
+      emp.training_hours = Math.max(0, (emp.training_hours || 0) - (log.training_hours || 0));
+      emp.trainings = Math.max(0, (emp.trainings || 0) - 1);
+      await db.from('employees').update({ 
+        training_hours: emp.training_hours, 
+        trainings: emp.trainings 
+      }).eq('id', emp.id);
+    }
+    
+    await db.from('training_logs').delete().eq('id', logId);
+    showToast('Berhasil', 'Riwayat pelatihan dihapus');
+    
+    const empId = log.emp_id;
+    closeModal('empDetailModal');
+    await syncDB();
+    showEmpDetail(empId); 
+  });
+}
+
+function openAddProgramModal() { 
+  if(!checkAccess()) return; 
+  document.getElementById('progModalTitle').textContent = "Buat Program Pelatihan"; 
+  document.getElementById('progId').value = ''; 
+  document.getElementById('trTitle').value = ''; 
+  document.getElementById('trDuration').value = 40; 
+  document.getElementById('trQuota').value = 30; 
+  document.getElementById('trInstructor').value = ''; 
+  document.getElementById('trDesc').value = ''; 
+  document.getElementById('progSaveBtn').textContent = "Buat Program"; 
+  openModal('newTrainingModal'); 
+}
+function openEditProgramModal(id) { 
+  if(!checkAccess()) return; 
+  const p = programs.find(x => x.id === id); 
+  if (!p) return; 
+  document.getElementById('progModalTitle').textContent = "Edit Program Pelatihan"; 
+  document.getElementById('progId').value = p.id; 
+  document.getElementById('trTitle').value = p.title; 
+  openModal('newTrainingModal'); 
+  document.getElementById('trCategory').value = p.category; 
+  document.getElementById('trLevel').value = p.level; 
+  document.getElementById('trDuration').value = parseInt(p.duration); 
+  document.getElementById('trQuota').value = p.total; 
+  document.getElementById('trInstructor').value = p.instructor; 
+  document.getElementById('trDesc').value = p.desc; 
+  document.getElementById('progSaveBtn').textContent = "Simpan Perubahan"; 
+}
+async function saveProgram() { 
+  if(!checkAccess()) return; 
+  const id = document.getElementById('progId').value; 
+  const title = document.getElementById('trTitle').value.trim(); 
+  if (!title) { showToast('Error', 'Judul wajib diisi', 'error'); return; } 
+  const selectedCatName = document.getElementById('trCategory').value; 
+  const catObj = categories.find(c => c.name === selectedCatName); 
+  const color = catObj ? catObj.color : 'zinc'; 
+  const payload = { 
+    title, category: selectedCatName, 
+    level: document.getElementById('trLevel').value, 
+    duration: `${document.getElementById('trDuration').value} jam`, 
+    total: parseInt(document.getElementById('trQuota').value) || 30, 
+    instructor: document.getElementById('trInstructor').value.trim() || 'TBD', 
+    desc: document.getElementById('trDesc').value.trim() || 'Tidak ada deskripsi', 
+    color 
+  }; 
+  if (id) { 
+    const { error } = await db.from('programs').update(payload).eq('id', id); 
+    if (!error) showToast('Berhasil', `Program "${title}" diperbarui`); 
+  } else { 
+    payload.id = Date.now(); payload.enrolled = 0; payload.rating = 0; 
+    const { error } = await db.from('programs').insert(payload); 
+    if (!error) showToast('Berhasil', `Program "${title}" dibuat`); 
+  } 
+  closeModal('newTrainingModal'); await syncDB(); 
+}
+async function deleteProgram(id) { 
+  if(!checkAccess()) return; 
+  const p = programs.find(x => x.id === id); 
+  if (!p) return; 
+  showConfirm('Hapus Program', `Hapus program "${p.title}"?`, async () => { 
+    await db.from('programs').delete().eq('id', id); 
+    showToast('Berhasil', 'Program dihapus'); await syncDB(); 
+  }); 
+}
+function renderPrograms(cat = 'all') { 
+  const grid = document.getElementById('programsGrid'); 
+  const filtered = cat === 'all' ? programs : programs.filter(p => p.category === cat); 
+  document.getElementById('programCount').textContent = filtered.length; 
+  if (filtered.length === 0) { 
+    grid.innerHTML = `<div class="col-span-full text-center py-10" style="color:var(--fg-muted)">Tidak ada program</div>`; 
+  } else { 
+    grid.innerHTML = filtered.map(p => { 
+      const c = colorMap[p.color] || colorMap.zinc; 
+      const pct = Math.round((p.enrolled / p.total) * 100); 
+      return `<div class="card card-hover p-5 flex flex-col">
+        <div class="flex items-start justify-between mb-4">
+          <div class="w-12 h-12 rounded-xl flex items-center justify-center" style="background:${c.bg}"><i class="w-6 h-6" data-lucide="book-open" style="color:${c.text}"></i></div>
+          ${currentUser === 'boss' ? '' : `<div class="flex gap-1"><button class="p-1.5 rounded-lg hover:bg-white/5" onclick="openEditProgramModal(${p.id})"><i class="w-4 h-4" data-lucide="edit-2" style="color:var(--fg-muted)"></i></button><button class="p-1.5 rounded-lg hover:bg-white/5" onclick="deleteProgram(${p.id})"><i class="w-4 h-4" data-lucide="trash-2" style="color:var(--rose)"></i></button></div>`}
+        </div>
+        <div class="flex items-center gap-2 mb-2">
+          <span class="badge ${c.badge}">${p.category}</span><span class="badge badge-zinc">${p.level}</span>
+        </div>
+        <h3 class="font-display text-lg font-semibold mb-2 leading-snug">${p.title}</h3>
+        <p class="text-xs mb-4 flex-1" style="color:var(--fg-muted)">${p.desc}</p>
+        <div class="space-y-3 mb-4">
+          <div class="flex items-center gap-2 text-xs" style="color:var(--fg-muted)"><i class="w-3.5 h-3.5" data-lucide="clock"></i>${p.duration}<span class="mx-1">·</span><i class="w-3.5 h-3.5" data-lucide="user"></i>${p.instructor}</div>
+          <div>
+            <div class="flex justify-between text-xs mb-1.5">
+              <span style="color:var(--fg-muted)">${p.enrolled}/${p.total} peserta</span>
+              <span class="font-medium" style="color:${c.text}">${pct}%</span>
+            </div>
+            <div class="progress-bar"><div class="progress-fill" style="width:${pct}%; background:linear-gradient(90deg, ${c.text}, ${c.text}80)"></div></div>
+          </div>
+        </div>
+        <button class="btn-primary w-full py-2 rounded-lg text-sm flex items-center justify-center gap-2" onclick="showToast('Detail Program', '${p.title}', 'info')"><i class="w-4 h-4" data-lucide="info"></i>Lihat Detail</button>
+      </div>`; 
+    }).join(''); 
+  } 
+  lucide.createIcons(); 
+}
+
+function openAddScheduleModal() { 
+  if(!checkAccess()) return; 
+  document.getElementById('schModalTitle').textContent = "Jadwalkan Sesi Pelatihan"; 
+  document.getElementById('schId').value = ''; 
+  document.getElementById('schDate').value = ''; 
+  document.getElementById('schTime').value = '09:00'; 
+  document.getElementById('schDuration').value = 8; 
+  document.getElementById('schQuota').value = 30; 
+  document.getElementById('schCost').value = 5000000; 
+  document.getElementById('schLocation').value = ''; 
+  document.getElementById('schInstructor').value = ''; 
+  document.getElementById('schSaveBtn').textContent = "Jadwalkan Sesi"; 
+  openModal('newScheduleModal'); 
+}
+function openEditScheduleModal(id) { 
+  if(!checkAccess()) return; 
+  const s = schedules.find(x => x.id === id); 
+  if (!s) return; 
+  document.getElementById('schModalTitle').textContent = "Edit Sesi Pelatihan"; 
+  document.getElementById('schId').value = s.id; 
+  openModal('newScheduleModal'); 
+  document.getElementById('schProgram').value = s.title; 
+  document.getElementById('schDate').value = s.date; 
+  document.getElementById('schTime').value = s.time; 
+  document.getElementById('schDuration').value = parseInt(s.duration); 
+  document.getElementById('schQuota').value = s.total; 
+  document.getElementById('schCost').value = s.cost; 
+  document.getElementById('schLocation').value = s.location; 
+  document.getElementById('schInstructor').value = s.instructor; 
+  document.getElementById('schSaveBtn').textContent = "Simpan Perubahan"; 
+  closeModal('schDetailModal'); 
+}
+async function saveSchedule() { 
+  if(!checkAccess()) return; 
+  const id = document.getElementById('schId').value; 
+  const title = document.getElementById('schProgram').value; 
+  const date = document.getElementById('schDate').value; 
+  const time = document.getElementById('schTime').value; 
+  const duration = document.getElementById('schDuration').value; 
+  const quota = document.getElementById('schQuota').value; 
+  const cost = parseInt(document.getElementById('schCost').value) || 0; 
+  const location = document.getElementById('schLocation').value.trim(); 
+  const instructor = document.getElementById('schInstructor').value.trim(); 
+  if (!date || !location) { showToast('Error', 'Tanggal dan lokasi wajib diisi', 'error'); return; } 
+  const payload = { 
+    title, date, time, duration: `${duration} jam`, total: parseInt(quota) || 30, cost, location, instructor: instructor || 'TBD' 
+  }; 
+  if (id) { 
+    const { error } = await db.from('schedules').update(payload).eq('id', id); 
+    if (!error) showToast('Berhasil', `Sesi "${title}" diperbarui`); 
+  } else { 
+    payload.id = Date.now(); payload.attendees = 0; 
+    const { error } = await db.from('schedules').insert(payload); 
+    if (!error) showToast('Berhasil', `Sesi "${title}" dijadwalkan`); 
+  } 
+  closeModal('newScheduleModal'); 
+  const nd = new Date(date); currentMonth = nd.getMonth(); currentYear = nd.getFullYear(); 
+  await syncDB(); 
+}
+async function deleteSchedule(id) { 
+  if(!checkAccess()) return; 
+  const s = schedules.find(x => x.id === id); 
+  if (!s) return; 
+  showConfirm('Hapus Sesi', `Hapus sesi "${s.title}"?`, async () => { 
+    await db.from('schedules').delete().eq('id', id); 
+    closeModal('schDetailModal'); 
+    showToast('Berhasil', 'Sesi pelatihan dihapus'); await syncDB(); 
+  }); 
+}
+async function addParticipantToSchedule(id) { 
+  if(!checkAccess()) return; 
+  const s = schedules.find(x => x.id === id); 
+  if (!s) return; 
+  if (s.attendees < s.total) { 
+    s.attendees++; 
+    await db.from('schedules').update({ attendees: s.attendees }).eq('id', id); 
+    showToast('Berhasil', 'Peserta berhasil ditambahkan ke sesi'); 
+    showSchDetail(id); await syncDB(); 
+  } else { 
+    showToast('Kuota Penuh', `Kuota peserta untuk sesi "${s.title}" sudah penuh`, 'error'); 
+  } 
+}
+function renderCalendar() { 
+  const grid = document.getElementById('calendarGrid'); 
+  document.getElementById('calMonthLabel').textContent = `${monthNames[currentMonth]} ${currentYear}`; 
+  const firstDay = new Date(currentYear, currentMonth, 1).getDay(); 
+  const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate(); 
+  const isCurrentMonth = new Date().getMonth() === currentMonth && new Date().getFullYear() === currentYear; 
+  const monthEvents = schedules.filter(s => { const d = new Date(s.date); return d.getMonth() === currentMonth && d.getFullYear() === currentYear; }); 
+  let html = ''; 
+  for (let i = 0; i < firstDay; i++) html += `<div class="calendar-day off"></div>`; 
+  for (let d = 1; d <= daysInMonth; d++) { 
+    const hasEvent = monthEvents.some(s => new Date(s.date).getDate() === d); 
+    const isToday = isCurrentMonth && d === new Date().getDate(); 
+    html += `<div class="calendar-day ${hasEvent ? 'has-event' : ''} ${isToday ? 'today' : ''}" onclick="selectDate(${d})"><div class="day-num text-sm font-medium">${d}</div>${hasEvent ? '<div class="mt-1"><div class="w-1.5 h-1.5 rounded-full" style="background:var(--emerald)"></div></div>' : ''}</div>`; 
+  } 
+  grid.innerHTML = html; 
+}
+function selectDate(day) { 
+  selectedDate = new Date(currentYear, currentMonth, day); 
+  const dayEvents = schedules.filter(s => { const d = new Date(s.date); return d.getDate() === day && d.getMonth() === currentMonth && d.getFullYear() === currentYear; }); 
+  const detail = document.getElementById('calEventDetail'); 
+  if (dayEvents.length > 0) { 
+    detail.classList.remove('hidden'); 
+    detail.innerHTML = `<div class="text-xs font-semibold mb-3" style="color:var(--emerald-light)">${dayEvents.length} sesi pada ${day} ${monthNames[currentMonth]} ${currentYear}</div>${dayEvents.map(e => `<div class="flex items-center gap-3 py-2 cursor-pointer hover:bg-white/[0.02] rounded-lg px-2 -mx-2" onclick="showSchDetail(${e.id})"><div class="text-sm font-bold w-12" style="color:var(--fg-muted)">${e.time}</div><div class="flex-1"><div class="text-sm font-medium">${e.title}</div><div class="text-xs" style="color:var(--fg-muted)">${e.location} · ${e.instructor}</div></div><span class="badge badge-zinc">${e.attendees}/${e.total}</span></div>`).join('')}`; 
+  } else { 
+    detail.classList.remove('hidden'); 
+    detail.innerHTML = `<div class="text-center py-4 text-sm" style="color:var(--fg-muted)">Tidak ada sesi pada ${day} ${monthNames[currentMonth]} ${currentYear}</div>`; 
+  } 
+  renderCalendar(); 
+}
+function changeMonth(delta) { 
+  currentMonth += delta; 
+  if (currentMonth < 0) { currentMonth = 11; currentYear--; } 
+  if (currentMonth > 11) { currentMonth = 0; currentYear++; } 
+  selectedDate = null; 
+  document.getElementById('calEventDetail').classList.add('hidden'); 
+  renderCalendar(); 
+}
+function goToday() { 
+  currentMonth = new Date().getMonth(); currentYear = new Date().getFullYear(); 
+  selectedDate = null; 
+  document.getElementById('calEventDetail').classList.add('hidden'); 
+  renderCalendar(); showToast('Hari Ini', 'Kalender diatur ke bulan ini', 'info'); 
+}
+function renderScheduleList() { 
+  const upcoming = [...schedules].sort((a,b) => new Date(a.date) - new Date(b.date)); 
+  document.getElementById('scheduleList').innerHTML = upcoming.slice(0, 5).map(s => { 
+    const d = new Date(s.date); 
+    return `<div class="card p-3 card-hover cursor-pointer" onclick="showSchDetail(${s.id})">
+      <div class="flex gap-3">
+        <div class="flex-shrink-0 w-12 text-center">
+          <div class="text-xs font-medium" style="color:var(--emerald-light)">${d.toLocaleDateString('id-ID', { month: 'short' })}</div>
+          <div class="text-xl font-bold">${d.getDate()}</div>
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="text-sm font-semibold truncate">${s.title}</div>
+          <div class="text-xs mt-1 flex items-center gap-2" style="color:var(--fg-muted)"><i class="w-3 h-3" data-lucide="clock"></i>${s.time} · ${s.duration}</div>
+          <div class="text-xs mt-1 flex items-center gap-2" style="color:var(--fg-muted)"><i class="w-3 h-3" data-lucide="map-pin"></i>${s.location}</div>
+          <div class="flex items-center justify-between mt-2">
+            <span class="badge badge-zinc">${s.attendees}/${s.total} peserta</span>
+            <span class="text-xs font-medium" style="color:var(--emerald-light)">Detail →</span>
+          </div>
+        </div>
+      </div>
+    </div>`; 
+  }).join('') || `<div class="text-center py-10 text-xs" style="color:var(--fg-muted)">Tidak ada jadwal</div>`; 
+  lucide.createIcons(); 
+}
+function renderScheduleListFull() { 
+  const upcoming = [...schedules].sort((a,b) => new Date(a.date) - new Date(b.date)); 
+  document.getElementById('scheduleListFull').innerHTML = upcoming.map(s => { 
+    const d = new Date(s.date); 
+    return `<div class="card p-4 card-hover cursor-pointer" onclick="showSchDetail(${s.id})">
+      <div class="flex items-start gap-4">
+        <div class="flex-shrink-0 w-14 h-14 rounded-xl flex flex-col items-center justify-center" style="background:rgba(16,185,129,0.08); border:1px solid rgba(16,185,129,0.15)">
+          <div class="text-[10px] font-medium" style="color:var(--emerald-light)">${d.toLocaleDateString('id-ID', { month: 'short' })}</div>
+          <div class="text-xl font-bold">${d.getDate()}</div>
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="font-semibold text-base">${s.title}</div>
+          <div class="text-xs mt-1" style="color:var(--fg-muted)">${d.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</div>
+          <div class="flex flex-wrap items-center gap-4 mt-2 text-xs" style="color:var(--fg-muted)">
+            <span class="flex items-center gap-1"><i class="w-3 h-3" data-lucide="clock"></i>${s.time} · ${s.duration}</span>
+            <span class="flex items-center gap-1"><i class="w-3 h-3" data-lucide="map-pin"></i>${s.location}</span>
+            <span class="flex items-center gap-1"><i class="w-3 h-3" data-lucide="user"></i>${s.instructor}</span>
+          </div>
+        </div>
+        <div class="text-right">
+          <div class="badge badge-emerald mb-2">${s.attendees}/${s.total}</div>
+        </div>
+      </div>
+    </div>`; 
+  }).join('') || `<div class="text-center py-10 text-xs" style="color:var(--fg-muted)">Tidak ada jadwal</div>`; 
+  lucide.createIcons(); 
+}
+function showSchDetail(id) { 
+  const s = schedules.find(x => x.id === id); 
+  if (!s) return; 
+  const date = new Date(s.date); 
+  const pct = s.total > 0 ? Math.round((s.attendees / s.total) * 100) : 0; 
+  document.getElementById('schDetailContent').innerHTML = `
+    <div class="mb-6">
+      <div class="text-xs uppercase tracking-wider mb-1" style="color:var(--emerald-light)">Sesi Pelatihan</div>
+      <h4 class="font-display text-2xl font-bold">${s.title}</h4>
+    </div>
+    <div class="space-y-3 mb-6">
+      <div class="flex items-center gap-3 p-3 rounded-lg" style="background:rgba(255,255,255,0.02)"><i class="w-5 h-5" data-lucide="calendar" style="color:var(--emerald-light)"></i><div><div class="text-xs" style="color:var(--fg-muted)">Tanggal</div><div class="text-sm font-medium">${date.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</div></div></div>
+      <div class="flex items-center gap-3 p-3 rounded-lg" style="background:rgba(255,255,255,0.02)"><i class="w-5 h-5" data-lucide="clock" style="color:var(--emerald-light)"></i><div><div class="text-xs" style="color:var(--fg-muted)">Waktu & Durasi</div><div class="text-sm font-medium">${s.time} WIB · ${s.duration}</div></div></div>
+      <div class="flex items-center gap-3 p-3 rounded-lg" style="background:rgba(255,255,255,0.02)"><i class="w-5 h-5" data-lucide="map-pin" style="color:var(--emerald-light)"></i><div><div class="text-xs" style="color:var(--fg-muted)">Lokasi</div><div class="text-sm font-medium">${s.location}</div></div></div>
+      <div class="flex items-center gap-3 p-3 rounded-lg" style="background:rgba(255,255,255,0.02)"><i class="w-5 h-5" data-lucide="user" style="color:var(--emerald-light)"></i><div><div class="text-xs" style="color:var(--fg-muted)">Instruktur</div><div class="text-sm font-medium">${s.instructor}</div></div></div>
+      <div class="flex items-center gap-3 p-3 rounded-lg" style="background:rgba(255,255,255,0.02)"><i class="w-5 h-5" data-lucide="users" style="color:var(--emerald-light)"></i><div class="flex-1"><div class="text-xs" style="color:var(--fg-muted)">Peserta Terdaftar</div><div class="text-sm font-medium">${s.attendees} dari ${s.total} peserta</div></div><div class="progress-bar w-24"><div class="progress-fill" style="width:${pct}%"></div></div></div>
+    </div>
+    ${currentUser === 'boss' ? '' : `<div class="flex gap-2"><button class="btn-primary flex-1 py-2.5 rounded-lg text-sm flex items-center justify-center gap-2" onclick="addParticipantToSchedule(${s.id})"><i class="w-4 h-4" data-lucide="user-plus"></i>Tambah Peserta</button><button class="btn-ghost flex-1 py-2.5 rounded-lg text-sm flex items-center justify-center gap-2" onclick="openEditScheduleModal(${s.id})"><i class="w-4 h-4" data-lucide="edit-2"></i>Edit Sesi</button><button class="btn-ghost px-4 py-2.5 rounded-lg text-sm flex items-center justify-center gap-2" style="color:var(--rose)" onclick="deleteSchedule(${s.id})"><i class="w-4 h-4" data-lucide="trash-2"></i></button></div>`}`; 
+  openModal('schDetailModal'); 
+}
+
+function openAddCertModal() { 
+  if(!checkAccess()) return; 
+  document.getElementById('certModalTitle').textContent = "Terbitkan Sertifikat"; 
+  document.getElementById('certIdInput').value = ''; 
+  document.getElementById('certDate').value = ''; 
+  document.getElementById('certScore').value = 90; 
+  document.getElementById('certSatisfaction').value = 4.5; 
+  document.getElementById('certEffectiveness').value = 75; 
+  document.getElementById('certSaveBtn').textContent = "Terbitkan Sertifikat"; 
+  openModal('newCertModal'); 
+}
+function openEditCertModal(id) { 
+  if(!checkAccess()) return; 
+  const c = certificates.find(x => x.id === id); 
+  if (!c) return; 
+  document.getElementById('certModalTitle').textContent = "Edit Sertifikat"; 
+  document.getElementById('certIdInput').value = c.id; 
+  openModal('newCertModal'); 
+  document.getElementById('certEmp').value = c.name; 
+  document.getElementById('certProgram').value = c.program; 
+  document.getElementById('certDate').value = c.date; 
+  document.getElementById('certScore').value = c.score; 
+  document.getElementById('certSatisfaction').value = c.satisfaction; 
+  document.getElementById('certEffectiveness').value = c.effectiveness; 
+  document.getElementById('certSaveBtn').textContent = "Simpan Perubahan"; 
+}
+async function saveCertificate() { 
+  if(!checkAccess()) return; 
+  const id = document.getElementById('certIdInput').value; 
+  const name = document.getElementById('certEmp').value; 
+  const program = document.getElementById('certProgram').value; 
+  const date = document.getElementById('certDate').value; 
+  const score = parseInt(document.getElementById('certScore').value); 
+  const sat = parseFloat(document.getElementById('certSatisfaction').value); 
+  const eff = parseInt(document.getElementById('certEffectiveness').value); 
+  const expiryYears = parseInt(document.getElementById('certExpiry').value); 
+  if (!date) { showToast('Error', 'Tanggal wajib diisi', 'error'); return; } 
+  if (score < 70) { showToast('Error', 'Skor minimal 70', 'error'); return; } 
+  const dateObj = new Date(date); 
+  const expiryDate = new Date(dateObj); 
+  expiryDate.setFullYear(expiryDate.getFullYear() + (expiryYears === 99 ? 50 : expiryYears)); 
+  const fmt = (d) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; 
+  const payload = { name, program, date: fmt(dateObj), expiry: fmt(expiryDate), score, satisfaction: sat, effectiveness: eff }; 
+  if (id) { 
+    const { error } = await db.from('certificates').update(payload).eq('id', id); 
+    if (!error) showToast('Berhasil', `Sertifikat ${name} diperbarui`); 
+  } else { 
+    payload.id = Date.now(); payload.certId = `CERT-${dateObj.getFullYear()}-${1000 + payload.id}`; 
+    const { error } = await db.from('certificates').insert(payload); 
+    if (!error) showToast('Berhasil', `Sertifikat untuk ${name} diterbitkan`); 
+  } 
+  closeModal('newCertModal'); await syncDB(); 
+}
+async function deleteCert(id) { 
+  if(!checkAccess()) return; 
+  showConfirm('Hapus Sertifikat', `Hapus sertifikat ini?`, async () => { 
+    await db.from('certificates').delete().eq('id', id); 
+    showToast('Berhasil', 'Sertifikat dihapus'); await syncDB(); 
+  }); 
+}
+function renderCertificates() { 
+  const grid = document.getElementById('certGrid'); 
+  document.getElementById('certTotalCount').textContent = certificates.length; 
+  document.getElementById('certStat1').textContent = certificates.length; 
+  if (certificates.length === 0) { 
+    grid.innerHTML = `<div class="col-span-full text-center py-10" style="color:var(--fg-muted)">Belum ada sertifikat</div>`; 
+    lucide.createIcons(); return; 
+  } 
+  grid.innerHTML = certificates.map(c => { 
+    const initials = c.name.split(' ').map(n => n[0]).join(''); 
+    const avatarNum = (c.id % 8) + 1; 
+    return `<div class="card card-hover overflow-hidden">
+      <div class="relative h-32 p-5" style="background:linear-gradient(135deg, rgba(16,185,129,0.15), rgba(139,92,246,0.1), rgba(245,158,11,0.08))">
+        <div class="relative flex items-start justify-between">
+          <div class="w-10 h-10 rounded-lg flex items-center justify-center" style="background:rgba(255,255,255,0.1); backdrop-filter:blur(10px)"><i class="w-5 h-5" data-lucide="award" style="color:var(--emerald-light)"></i></div>
+          ${currentUser === 'boss' ? '' : `<div class="flex gap-1"><button class="p-1.5 rounded-lg hover:bg-white/5" onclick="openEditCertModal(${c.id})"><i class="w-4 h-4" data-lucide="edit-2" style="color:var(--fg-muted)"></i></button><button class="p-1.5 rounded-lg hover:bg-white/5" onclick="deleteCert(${c.id})"><i class="w-4 h-4" data-lucide="trash-2" style="color:var(--rose)"></i></button></div>`}
+        </div>
+        <div class="absolute bottom-4 left-5 right-5"><div class="font-display text-lg font-semibold leading-tight">${c.program}</div></div>
+      </div>
+      <div class="p-5">
+        <div class="flex items-center gap-3 mb-4">
+          <div class="avatar avatar-${avatarNum} w-10 h-10 text-xs">${initials}</div>
+          <div class="flex-1 min-w-0">
+            <div class="font-medium text-sm truncate">${c.name}</div>
+            <div class="text-xs" style="color:var(--fg-muted)">Lulus ${c.date}</div>
+          </div>
+          <div class="text-right">
+            <div class="text-lg font-bold" style="color:var(--emerald-light)">${c.score}</div>
+            <div class="text-[10px]" style="color:var(--fg-subtle)">skor</div>
+          </div>
+        </div>
+        <div class="flex items-center justify-between text-xs pt-3 border-t" style="border-color:var(--border); color:var(--fg-muted)">
+          <span>Berlaku hingga</span><span class="font-medium" style="color:var(--fg)">${c.expiry}</span>
+        </div>
+        <div class="flex gap-2 mt-4">
+          <button class="btn-ghost flex-1 py-2 rounded-lg text-xs flex items-center justify-center gap-1.5" onclick="downloadCertificate(${c.id})"><i class="w-3.5 h-3.5" data-lucide="download"></i>Unduh</button>
+          <button class="btn-ghost flex-1 py-2 rounded-lg text-xs flex items-center justify-center gap-1.5" onclick="shareCertificate(${c.id})"><i class="w-3.5 h-3.5" data-lucide="share-2"></i>Bagikan</button>
+        </div>
+      </div>
+    </div>`; 
+  }).join(''); 
+  lucide.createIcons(); 
+}
+function downloadCertificate(id) { 
+  const c = certificates.find(x => x.id === id); 
+  if (!c) return; 
+  const content = `\n==================================================\n              SERTIFIKAT PELATIHAN\n==================================================\n\nNomor Sertifikat : ${c.certId}\nDiberikan Kepada : ${c.name}\nProgram Pelatihan: ${c.program}\nTanggal Lulus    : ${c.date}\nMasa Berlaku     : ${c.expiry}\nSkor Kelulusan   : ${c.score}\n\nDiterbitkan oleh: PelatihanPro - Sistem Manajemen Pelatihan Pegawai\n==================================================\n`; 
+  const blob = new Blob([content], { type: 'text/plain;charset=utf-8;' }); 
+  const url = URL.createObjectURL(blob); 
+  const a = document.createElement('a'); 
+  a.href = url; a.download = `Sertifikat_${c.name}_${c.certId}.txt`; 
+  document.body.appendChild(a); a.click(); document.body.removeChild(a); 
+  URL.revokeObjectURL(url); showToast('Berhasil Mengunduh', `File sertifikat ${c.certId} telah diunduh`); 
+}
+function shareCertificate(id) { 
+  const c = certificates.find(x => x.id === id); 
+  if (!c) return; 
+  const shareData = { title: `Sertifikat ${c.name}`, text: `Lihat sertifikat pelatihan untuk ${c.name} (${c.program}). ID: ${c.certId}`, url: `https://pelatihanpro.co.id/cert/${c.certId}` }; 
+  if (navigator.share) { 
+    navigator.share(shareData).then(() => showToast('Berhasil Dibagikan', 'Sertifikat telah dibagikan')).catch((err) => { if (err.name !== 'AbortError') showToast('Gagal Membagikan', 'Terjadi kesalahan', 'error'); }); 
+  } else { 
+    const url = shareData.url; 
+    if (navigator.clipboard) { navigator.clipboard.writeText(url).then(() => showToast('Tautan Disalin', 'Tautan sertifikat disalin ke clipboard')).catch(() => showToast('Info', `Tautan: ${url}`, 'info')); } 
+    else { showToast('Info', `Tautan: ${url}`, 'info'); } 
+  } 
+}
+
+function exportEmployees() { 
+  if(!checkAccess()) return; 
+  const headers = ['NIP', 'Nama', 'Email', 'Departemen', 'Bidang', 'Posisi', 'Status', 'Jumlah Pelatihan', 'Total Jam Pelatihan (JP)']; 
+  const rows = employees.map(e => [e.nip, e.name, e.email, e.dept, e.field, e.position, e.status, e.trainings, e.training_hours || 0]); 
+  let csv = headers.join(',') + '\n'; 
+  rows.forEach(r => { csv += r.map(c => `"${c}"`).join(',') + '\n'; }); 
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' }); 
+  const url = URL.createObjectURL(blob); 
+  const a = document.createElement('a'); 
+  a.href = url; a.download = 'data-pegawai.csv'; a.click(); 
+  URL.revokeObjectURL(url); showToast('Berhasil', 'Data diekspor ke CSV'); 
+}
+function downloadTemplate() { 
+  if(!checkAccess()) return; 
+  const wsData = [["NIP", "Nama", "Email", "Departemen", "Bidang", "Posisi"], ["199001012023001", "Budi Santoso", "budi.s@nusantara.co.id", "Teknologi Informasi", "Software Engineering", "Staff"]]; 
+  const ws = XLSX.utils.aoa_to_sheet(wsData); 
+  ws['!cols'] = [{ wch: 20 }, { wch: 25 }, { wch: 30 }, { wch: 25 }, { wch: 25 }, { wch: 25 }]; 
+  const wb = XLSX.utils.book_new(); 
+  XLSX.utils.book_append_sheet(wb, ws, "Template Pegawai"); 
+  XLSX.writeFile(wb, "template-import-pegawai.xlsx"); 
+  showToast('Template Diunduh', 'File template Excel siap digunakan'); 
+}
+function handleImportFile(event) { 
+  if(!checkAccess()) return; 
+  const file = event.target.files[0]; 
+  if (!file) return; 
+  const reader = new FileReader(); 
+  reader.onload = function(e) { 
+    try { 
+      const data = new Uint8Array(e.target.result); 
+      const workbook = XLSX.read(data, { type: 'array' }); 
+      const worksheet = workbook.Sheets[workbook.SheetNames[0]]; 
+      const json = XLSX.utils.sheet_to_json(worksheet, { header: 1 }); 
+      if (json.length === 0 || !json[0].includes('NIP')) { showToast('Format Salah', 'File tidak sesuai template', 'error'); resetImportModal(); return; } 
+      importedData = []; 
+      for (let i = 1; i < json.length; i++) { 
+        const row = json[i]; 
+        if (!row || row.length === 0 || !row[0]) continue; 
+        const nip = String(row[0] || '').trim(); 
+        const name = String(row[1] || '').trim(); 
+        if (nip && name) { importedData.push({ nip, name, email: String(row[2] || '').trim(), dept: String(row[3] || 'Lainnya').trim(), field: String(row[4] || 'Lainnya').trim(), position: String(row[5] || 'Staff').trim() }); } 
+      } 
+      if (importedData.length === 0) { showToast('Data Kosong', 'Tidak ada data valid', 'error'); resetImportModal(); return; } 
+      document.getElementById('importPreviewBody').innerHTML = importedData.map(d => `<tr><td>${d.nip}</td><td>${d.name}</td><td>${d.email || '-'}</td><td>${d.dept}</td></tr>`).join(''); 
+      document.getElementById('importPreview').classList.remove('hidden'); 
+      document.getElementById('importStatus').textContent = `${importedData.length} pegawai siap diimpor/diperbarui`; 
+      const btn = document.getElementById('confirmImportBtn'); 
+      btn.disabled = false; btn.style.opacity = '1'; btn.style.cursor = 'pointer'; 
+    } catch (err) { showToast('Import Gagal', 'Terjadi kesalahan', 'error'); resetImportModal(); } 
+    event.target.value = ''; 
+  }; 
+  reader.readAsArrayBuffer(file); 
+}
+
+async function confirmImport() { 
+  if(!checkAccess()) return; 
+  if (importedData.length === 0) return; 
+  let insertCount = 0; let updateCount = 0; 
+  const inserts = []; const updates = []; 
+  for (let d of importedData) { 
+    const nip = d.nip; 
+    const existing = employees.find(e => e.nip === nip); 
+    const payload = { name: d.name, email: d.email || `${d.name.toLowerCase().replace(/\s+/g, '.')}@import.nusantara.co.id`, dept: d.dept, field: d.field, position: d.position }; 
+    if (existing) { updates.push({ id: existing.id, ...payload }); updateCount++; } 
+    else { 
+      const newId = Date.now() + insertCount; 
+      inserts.push({ id: newId, nip: nip, ...payload, trainings: 0, training_hours: 0, completion: 0, status: 'active', avatar: ((newId-1)%8)+1, initials: d.name.split(' ').map(n => n[0]).join('').substring(0,2).toUpperCase() }); 
+      insertCount++; 
+    } 
+  } 
+  if (inserts.length > 0) { const { error: insErr } = await db.from('employees').insert(inserts); if (insErr) console.error("Insert Error:", insErr); } 
+  if (updates.length > 0) { for (let u of updates) { const { id, ...data } = u; await db.from('employees').update(data).eq('id', id); } } 
+  closeModal('importModal'); resetImportModal(); await syncDB(); 
+  let msg = `${insertCount} pegawai baru ditambahkan.`; 
+  if (updateCount > 0) { msg += ` ${updateCount} data lama diperbarui.`; } 
+  showToast('Import Selesai', msg, 'success'); 
+}
+function resetImportModal() { 
+  importedData = []; 
+  document.getElementById('importPreview').classList.add('hidden'); 
+  document.getElementById('importStatus').textContent = ''; 
+  document.getElementById('importFileInput').value = ''; 
+  const btn = document.getElementById('confirmImportBtn'); 
+  btn.disabled = true; btn.style.opacity = '0.5'; btn.style.cursor = 'not-allowed'; 
+}
+
+function togglePanel(id) { 
+  const panel = document.getElementById(id); 
+  const backdrop = document.getElementById('panelBackdrop'); 
+  const isOpen = panel.classList.contains('open'); 
+  closeAllPanels(); 
+  if (!isOpen) { 
+    panel.classList.add('open'); 
+    backdrop.classList.remove('hidden');
+  } 
+}
+function closeAllPanels() { 
+  document.querySelectorAll('.slide-panel').forEach(p => p.classList.remove('open')); 
+  const backdrop = document.getElementById('panelBackdrop');
+  if (backdrop) backdrop.classList.add('hidden');
+}
+
+Chart.defaults.color = '#A1A1AA'; Chart.defaults.font.family = "'Plus Jakarta Sans', sans-serif";
+
+function initTrendChart(period = 12) {
+  const ctx = document.getElementById('trendChart'); 
+  if (!ctx) return; 
+  if (trendChartInstance) trendChartInstance.destroy(); 
+  const gradientInternal = ctx.getContext('2d').createLinearGradient(0, 0, 0, 280); 
+  gradientInternal.addColorStop(0, 'rgba(16,185,129,0.3)'); gradientInternal.addColorStop(1, 'rgba(16,185,129,0)'); 
+  const gradientExternal = ctx.getContext('2d').createLinearGradient(0, 0, 0, 280); 
+  gradientExternal.addColorStop(0, 'rgba(14,165,233,0.3)'); gradientExternal.addColorStop(1, 'rgba(14,165,233,0)'); 
+  const now = new Date(); const labels = []; const dataInternal = []; const dataExternal = []; 
+  const startMonth = period === 6 ? now.getMonth() - 5 : 0;
+  for (let i = 0; i < period; i++) {
+    const m = new Date(now.getFullYear(), startMonth + i, 1);
+    labels.push(monthNamesShort[m.getMonth()]);
+    let intCount = 0; let extCount = 0;
+    trainingLogs.forEach(log => {
+      const d = new Date(log.log_date + 'T00:00:00');
+      if (d.getMonth() === m.getMonth() && d.getFullYear() === m.getFullYear()) {
+        if (log.source === 'external') { extCount++; } else if (log.source === 'internal') { intCount++; }
+      }
+    });
+    dataInternal.push(intCount); dataExternal.push(extCount);
+  }
+  trendChartInstance = new Chart(ctx, {
+    type: 'line',
+    data: { labels, datasets: [
+      { label: 'Internal', data: dataInternal, borderColor: '#10B981', backgroundColor: gradientInternal, tension: 0.4, fill: true, borderWidth: 2.5, pointBackgroundColor: '#10B981', pointRadius: 4 }, 
+      { label: 'Eksternal', data: dataExternal, borderColor: '#0EA5E9', backgroundColor: gradientExternal, tension: 0.4, fill: true, borderWidth: 2.5, pointBackgroundColor: '#0EA5E9', pointRadius: 4 }
+    ] },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: true, position: 'top', labels: { color: '#A1A1AA', usePointStyle: true, padding: 20 } } }, scales: { y: { grid: { color: 'rgba(255,255,255,0.04)' }, beginAtZero: true } } }
+  });
+}
+
+function initDeptChart() { 
+  const ctx = document.getElementById('deptChart'); 
+  if (!ctx) return; 
+  if (deptChartInstance) deptChartInstance.destroy(); 
+  const depts = departments.map(d => d.name); 
+  const totalEmps = depts.map(d => employees.filter(e => e.dept === d).length); 
+  const trainedEmps = depts.map(d => employees.filter(e => e.dept === d && e.trainings > 0).length); 
+  
+  deptChartInstance = new Chart(ctx, { 
+    type: 'bar', 
+    data: { 
+      labels: depts, 
+      datasets: [
+        { label: 'Total Pegawai', data: totalEmps, backgroundColor: 'rgba(161,161,170,0.3)', borderRadius: 4, barPercentage: 0.8, categoryPercentage: 0.7 }, 
+        { label: 'Mengikuti Pelatihan', data: trainedEmps, backgroundColor: '#10B981', borderRadius: 4, barPercentage: 0.8, categoryPercentage: 0.7 }
+      ] 
+    }, 
+    options: { 
+      indexAxis: 'y',
+      responsive: true, 
+      maintainAspectRatio: false, 
+      plugins: { 
+        legend: { display: true, position: 'bottom', labels: { color: '#A1A1AA', boxWidth: 12, padding: 15 } } 
+      }, 
+      scales: { 
+        x: { grid: { color: 'rgba(255,255,255,0.04)' }, beginAtZero: true, ticks: { color: '#71717A', precision: 0 } },
+        y: { grid: { display: false }, ticks: { color: '#A1A1AA' } }
+      } 
+    } 
+  }); 
+}
+
+function initFieldChart() { 
+  const ctx = document.getElementById('fieldChart'); 
+  if (!ctx) return; 
+  if (fieldChartInstance) fieldChartInstance.destroy(); 
+  const flds = fields.map(f => f.name); 
+  const totalEmps = flds.map(f => employees.filter(e => e.field === f).length); 
+  const trainedEmps = flds.map(f => employees.filter(e => e.field === f && e.trainings > 0).length); 
+  
+  fieldChartInstance = new Chart(ctx, { 
+    type: 'bar', 
+    data: { 
+      labels: flds, 
+      datasets: [
+        { label: 'Total Pegawai', data: totalEmps, backgroundColor: 'rgba(161,161,170,0.3)', borderRadius: 4, barPercentage: 0.8, categoryPercentage: 0.7 }, 
+        { label: 'Mengikuti Pelatihan', data: trainedEmps, backgroundColor: '#0EA5E9', borderRadius: 4, barPercentage: 0.8, categoryPercentage: 0.7 }
+      ] 
+    }, 
+    options: { 
+      indexAxis: 'y',
+      responsive: true, 
+      maintainAspectRatio: false, 
+      plugins: { 
+        legend: { display: true, position: 'bottom', labels: { color: '#A1A1AA', boxWidth: 12, padding: 15 } } 
+      }, 
+      scales: { 
+        x: { grid: { color: 'rgba(255,255,255,0.04)' }, beginAtZero: true, ticks: { color: '#71717A', precision: 0 } },
+        y: { grid: { display: false }, ticks: { color: '#A1A1AA' } }
+      } 
+    } 
+  }); 
+}
+
+function initDeptJpChart() { 
+  const ctx = document.getElementById('deptJpChart'); 
+  if (!ctx) return; 
+  if (deptJpChartInstance) deptJpChartInstance.destroy(); 
+  
+  const now = new Date();
+  const labels = [];
+  const datasets = [];
+  const target = parseInt(appSettings.jp_target) || 40;
+  const legendHtml = [];
+  
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    labels.push(d.toLocaleDateString('id-ID', { month: 'short' }));
+  }
+  
+  departments.forEach((dept, idx) => {
+    const color = deptChartColors[idx % deptChartColors.length];
+    const data = [];
+    let totalYearJp = 0;
+    
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      let monthJp = 0;
+      trainingLogs.forEach(log => {
+        const logDate = new Date(log.log_date + 'T00:00:00');
+        if(logDate.getMonth() === d.getMonth() && logDate.getFullYear() === d.getFullYear()) {
+          const emp = employees.find(e => e.id === log.emp_id);
+          if(emp && emp.dept === dept.name) {
+            monthJp += Math.max(0, log.training_hours || 0);
+          }
+        }
+      });
+      data.push(Math.max(0, monthJp));
+    }
+    
+    const deptEmps = employees.filter(e => e.dept === dept.name);
+    trainingLogs.forEach(log => {
+      const logDate = new Date(log.log_date + 'T00:00:00');
+      if(logDate.getFullYear() === now.getFullYear()) {
+        const emp = employees.find(e => e.id === log.emp_id);
+        if(emp && emp.dept === dept.name) totalYearJp += Math.max(0, log.training_hours || 0);
+      }
+    });
+    const avgJp = deptEmps.length > 0 ? (totalYearJp / deptEmps.length).toFixed(1) : '0';
+    const statusColor = parseFloat(avgJp) >= target ? 'var(--emerald)' : 'var(--amber)';
+    
+    datasets.push({
+      label: dept.name,
+      data: data,
+      backgroundColor: color + '80',
+      borderColor: color,
+      borderWidth: 1,
+      borderRadius: 4
+    });
+    
+    legendHtml.push(`<div class="flex items-center justify-between text-xs">
+      <div class="flex items-center gap-2">
+        <div class="w-2.5 h-2.5 rounded-sm" style="background:${color}"></div>
+        <span style="color:var(--fg-muted)">${dept.name}</span>
+      </div>
+      <span class="font-medium">Avg: <span style="color:${statusColor}">${avgJp} JP</span> / Target: ${target} JP</span>
+    </div>`);
+  });
+  
+  deptJpChartInstance = new Chart(ctx, {
+    type: 'bar',
+    data: { labels, datasets },
+    options: { 
+      responsive: true, 
+      maintainAspectRatio: false, 
+      plugins: { legend: { display: false } }, 
+      scales: { 
+        x: { grid: { display: false } }, 
+        y: { 
+          grid: { color: 'rgba(255,255,255,0.04)' }, 
+          beginAtZero: true, 
+          ticks: { color: '#71717A', precision: 0, 
+            callback: function(value) { return Math.max(0, value); } 
+          } 
+        } 
+      } 
+    }
+  });
+  document.getElementById('deptJpLegend').innerHTML = legendHtml.join('');
+}
+
+function initFieldJpChart() { 
+  const ctx = document.getElementById('fieldJpChart'); 
+  if (!ctx) return; 
+  if (fieldJpChartInstance) fieldJpChartInstance.destroy(); 
+  
+  const now = new Date();
+  const labels = [];
+  const datasets = [];
+  const target = parseInt(appSettings.jp_target) || 40;
+  const legendHtml = [];
+  
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    labels.push(d.toLocaleDateString('id-ID', { month: 'short' }));
+  }
+  
+  fields.forEach((fld, idx) => {
+    const color = deptChartColors[(idx + 3) % deptChartColors.length]; 
+    const data = [];
+    let totalYearJp = 0;
+    
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      let monthJp = 0;
+      trainingLogs.forEach(log => {
+        const logDate = new Date(log.log_date + 'T00:00:00');
+        if(logDate.getMonth() === d.getMonth() && logDate.getFullYear() === d.getFullYear()) {
+          const emp = employees.find(e => e.id === log.emp_id);
+          if(emp && emp.field === fld.name) {
+            monthJp += Math.max(0, log.training_hours || 0);
+          }
+        }
+      });
+      data.push(Math.max(0, monthJp));
+    }
+    
+    const fldEmps = employees.filter(e => e.field === fld.name);
+    trainingLogs.forEach(log => {
+      const logDate = new Date(log.log_date + 'T00:00:00');
+      if(logDate.getFullYear() === now.getFullYear()) {
+        const emp = employees.find(e => e.id === log.emp_id);
+        if(emp && emp.field === fld.name) totalYearJp += Math.max(0, log.training_hours || 0);
+      }
+    });
+    const avgJp = fldEmps.length > 0 ? (totalYearJp / fldEmps.length).toFixed(1) : '0';
+    const statusColor = parseFloat(avgJp) >= target ? 'var(--emerald)' : 'var(--amber)';
+    
+    datasets.push({
+      label: fld.name,
+      data: data,
+      backgroundColor: color + '80',
+      borderColor: color,
+      borderWidth: 1,
+      borderRadius: 4
+    });
+    
+    legendHtml.push(`<div class="flex items-center justify-between text-xs">
+      <div class="flex items-center gap-2">
+        <div class="w-2.5 h-2.5 rounded-sm" style="background:${color}"></div>
+        <span style="color:var(--fg-muted)">${fld.name}</span>
+      </div>
+      <span class="font-medium">Avg: <span style="color:${statusColor}">${avgJp} JP</span> / Target: ${target} JP</span>
+    </div>`);
+  });
+  
+  fieldJpChartInstance = new Chart(ctx, {
+    type: 'bar',
+    data: { labels, datasets },
+    options: { 
+      responsive: true, 
+      maintainAspectRatio: false, 
+      plugins: { legend: { display: false } }, 
+      scales: { 
+        x: { grid: { display: false } }, 
+        y: { 
+          grid: { color: 'rgba(255,255,255,0.04)' }, 
+          beginAtZero: true, 
+          ticks: { color: '#71717A', precision: 0,
+            callback: function(value) { return Math.max(0, value); } 
+          } 
+        } 
+      } 
+    }
+  });
+  document.getElementById('fieldJpLegend').innerHTML = legendHtml.join('');
+}
+
+function initCatChart() { 
+  const ctx = document.getElementById('catChart'); 
+  if (!ctx) return; 
+  if (catChartInstance) catChartInstance.destroy(); 
+  const cats = categories.map(c => c.name); 
+  const colors = categories.map(c => colorMap[c.color]?.text || '#D4D4D8'); 
+  const counts = cats.map(c => programs.filter(p => p.category === c).length); 
+  catChartInstance = new Chart(ctx, { type: 'bar', data: { labels: cats, datasets: [{ data: counts, backgroundColor: colors, borderRadius: 8 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { grid: { color: 'rgba(255,255,255,0.04)' }, beginAtZero: true } } } }); 
+}
+function initCompletionChart() { 
+  const ctx = document.getElementById('completionChart'); 
+  if (!ctx) return; 
+  if (completionChartInstance) completionChartInstance.destroy(); 
+  const depts = departments.map(d => d.name); 
+  const avgComp = depts.map(d => { const deptEmps = employees.filter(e => e.dept === d); return deptEmps.length > 0 ? Math.round(deptEmps.reduce((s,e)=>s+(e.completion||0),0) / deptEmps.length) : 0; }); 
+  completionChartInstance = new Chart(ctx, { type: 'bar', data: { labels: depts, datasets: [{ label: 'Aktual', data: avgComp, backgroundColor: '#10B981', borderRadius: 6 }, { label: 'Target', data: Array(depts.length).fill(85), backgroundColor: 'rgba(245,158,11,0.4)', borderRadius: 6 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, padding: 15, font: { size: 11 } } } }, scales: { y: { grid: { color: 'rgba(255,255,255,0.04)' }, beginAtZero: true, max: 100 } } } }); 
+}
+function getMonthlyData(dataArr, dateKey, valueKey, aggType = 'sum') { 
+  const now = new Date(); const labels = []; const values = []; 
+  for (let i = 5; i >= 0; i--) { 
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1); 
+    const month = d.toLocaleDateString('id-ID', { month: 'short' }); 
+    labels.push(month); 
+    const monthData = dataArr.filter(item => { const itemDate = new Date(item[dateKey]); return itemDate.getMonth() === d.getMonth() && itemDate.getFullYear() === d.getFullYear(); }); 
+    if (aggType === 'sum') { values.push(monthData.reduce((s, item) => s + (item[valueKey] || 0), 0)); } 
+    else if (aggType === 'avg') { values.push(monthData.length > 0 ? (monthData.reduce((s, item) => s + (item[valueKey] || 0), 0) / monthData.length) : 0); } 
+  } 
+  return { labels, values }; 
+}
+function updateReports() { 
+  const totalInvest = schedules.reduce((s, sch) => s + (sch.cost || 0), 0); 
+  document.getElementById('rptTotalInvest').textContent = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(totalInvest); 
+  const avgSat = certificates.length > 0 ? (certificates.reduce((s, c) => s + (c.satisfaction || 0), 0) / certificates.length).toFixed(1) : '0.0'; 
+  const avgEff = certificates.length > 0 ? Math.round(certificates.reduce((s, c) => s + (c.effectiveness || 0), 0) / certificates.length) : 0; 
+  document.getElementById('rptAvgSat').textContent = avgSat; 
+  document.getElementById('rptAvgEff').textContent = avgEff; 
+  const investCtx = document.getElementById('investChart'); 
+  const satCtx = document.getElementById('satisfactionChart'); 
+  const effCtx = document.getElementById('effectivenessChart'); 
+  if(investCtx.chart) investCtx.chart.destroy(); 
+  if(satCtx.chart) satCtx.chart.destroy(); 
+  if(effCtx.chart) effCtx.chart.destroy(); 
+  const miniChartOpts = { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { enabled: false } }, scales: { x: { display: false }, y: { display: false } }, elements: { point: { radius: 0 } } }; 
+  const investData = getMonthlyData(schedules, 'date', 'cost', 'sum'); 
+  investCtx.chart = new Chart(investCtx, { type: 'line', data: { labels: investData.labels, datasets: [{ data: investData.values, borderColor: '#10B981', backgroundColor: 'rgba(16,185,129,0.1)', fill: true, tension: 0.4, borderWidth: 2 }] }, options: miniChartOpts }); 
+  const satData = getMonthlyData(certificates, 'date', 'satisfaction', 'avg'); 
+  satCtx.chart = new Chart(satCtx, { type: 'line', data: { labels: satData.labels, datasets: [{ data: satData.values, borderColor: '#F59E0B', backgroundColor: 'rgba(245,158,11,0.1)', fill: true, tension: 0.4, borderWidth: 2 }] }, options: miniChartOpts }); 
+  const effData = getMonthlyData(certificates, 'date', 'effectiveness', 'avg'); 
+  effCtx.chart = new Chart(effCtx, { type: 'bar', data: { labels: effData.labels, datasets: [{ data: effData.values, backgroundColor: '#8B5CF6', borderRadius: 4, barThickness: 12 }] }, options: miniChartOpts }); 
+}
+
+document.querySelectorAll('#trendPeriodBtns button').forEach(btn => btn.addEventListener('click', () => { 
+  document.querySelectorAll('#trendPeriodBtns button').forEach(b => b.classList.remove('active')); 
+  btn.classList.add('active'); 
+  initTrendChart(parseInt(btn.dataset.period));
+}));
+
+function exportReport() { showToast('Mengunduh', 'Laporan dalam format PDF sedang disiapkan...', 'info'); setTimeout(() => showToast('Berhasil', 'Laporan telah diunduh'), 1500); }
+
+async function saveSettings() {
+  if(!checkAccess()) return;
+  const payload = { id: 1, company_name: document.getElementById('setCompany').value, industry: document.getElementById('setIndustry').value, email: document.getElementById('setEmail').value, timezone: document.getElementById('setTimezone').value, jp_target: parseInt(document.getElementById('setJpTarget').value) || 40, hr_name: document.getElementById('setHrName').value, hr_role: document.getElementById('setHrRole').value };
+  const { error } = await db.from('app_settings').upsert(payload);
+  if (!error) { showToast('Tersimpan', 'Pengaturan berhasil disimpan ke cloud'); await syncDB(); updateProfileDisplay(); } else { showToast('Error', 'Gagal menyimpan pengaturan', 'error'); }
+}
+
+document.getElementById('globalSearch').addEventListener('input', e => { 
+  const query = e.target.value.toLowerCase().trim(); 
+  const results = document.getElementById('searchResults'); 
+  if (!query) { results.classList.add('hidden'); return; } 
+  const empRes = employees.filter(emp => emp.name.toLowerCase().includes(query) || emp.email.toLowerCase().includes(query) || (emp.nip && emp.nip.includes(query))).slice(0, 3); 
+  const progRes = programs.filter(p => p.title.toLowerCase().includes(query)).slice(0, 3); 
+  const certRes = certificates.filter(c => c.name.toLowerCase().includes(query) || c.program.toLowerCase().includes(query)).slice(0, 3); 
+  let html = ''; 
+  if (empRes.length === 0 && progRes.length === 0 && certRes.length === 0) html = `<div class="p-4 text-center text-sm" style="color:var(--fg-muted)">Tidak ada hasil</div>`; 
+  else { 
+    if (empRes.length > 0) { 
+      html += `<div class="text-[10px] font-semibold uppercase px-3 py-2" style="color:var(--fg-subtle)">Pegawai</div>`; 
+      html += empRes.map(emp => `<div class="flex items-center gap-3 p-2 rounded-lg cursor-pointer hover:bg-white/5" onclick="switchView('employees'); document.getElementById('globalSearch').value=''; document.getElementById('searchResults').classList.add('hidden')"><div class="avatar avatar-${emp.avatar} w-8 h-8 text-[10px]">${emp.initials}</div><div class="flex-1 min-w-0"><div class="text-sm font-medium truncate">${emp.name}</div><div class="text-xs truncate" style="color:var(--fg-muted)">${emp.position}</div></div></div>`).join(''); 
+    } 
+    if (progRes.length > 0) { 
+      html += `<div class="text-[10px] font-semibold uppercase px-3 py-2 mt-1" style="color:var(--fg-subtle)">Program</div>`; 
+      html += progRes.map(p => `<div class="flex items-center gap-3 p-2 rounded-lg cursor-pointer hover:bg-white/5" onclick="switchView('programs'); document.getElementById('globalSearch').value=''; document.getElementById('searchResults').classList.add('hidden')"><div class="w-8 h-8 rounded-lg flex items-center justify-center" style="background:rgba(16,185,129,0.1)"><i class="w-4 h-4" data-lucide="graduation-cap" style="color:var(--emerald-light)"></i></div><div class="flex-1 min-w-0"><div class="text-sm font-medium truncate">${p.title}</div></div></div>`).join(''); 
+    } 
+  } 
+  results.innerHTML = html; 
+  results.classList.remove('hidden'); 
+  lucide.createIcons(); 
+});
+document.addEventListener('click', e => { if (!e.target.closest('#globalSearch') && !e.target.closest('#searchResults')) document.getElementById('searchResults').classList.add('hidden'); });
+document.querySelectorAll('#scheduleViewToggle button').forEach(btn => btn.addEventListener('click', () => { 
+  document.querySelectorAll('#scheduleViewToggle button').forEach(b => { b.style.background = 'var(--surface)'; b.style.color = 'var(--fg-muted)'; }); 
+  btn.style.background = 'var(--emerald)'; btn.style.color = 'white'; 
+  if (btn.dataset.mode === 'cal') { document.getElementById('scheduleCalView').classList.remove('hidden'); document.getElementById('scheduleListFullView').classList.add('hidden'); } 
+  else { document.getElementById('scheduleCalView').classList.add('hidden'); document.getElementById('scheduleListFullView').classList.remove('hidden'); } 
+}));
+
+document.addEventListener('DOMContentLoaded', () => {
+lucide.createIcons();
+});
+</script>
+
+</body>
+</html>
