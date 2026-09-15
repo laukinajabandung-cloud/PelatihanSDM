@@ -223,7 +223,7 @@
           </div>
         </div>
         <div class="card p-4 mb-5 flex flex-wrap gap-3 items-center"><div class="flex-1 min-w-[200px] relative"><i class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2" data-lucide="search" style="color:var(--fg-subtle)"></i><input type="text" id="employeeSearch" placeholder="Cari nama atau email..." class="input-field pl-10 py-2 text-sm"></div><select class="input-field py-2 text-sm w-auto" id="filterDept"></select><select class="input-field py-2 text-sm w-auto" id="filterStatus"><option value="">Semua Status</option><option value="active">Aktif</option><option value="training">Sedang Pelatihan</option><option value="completed">Selesai</option></select></div>
-        <div class="card overflow-hidden"><div class="overflow-x-auto"><table class="data-table"><thead><tr><th style="width:40px"><input type="checkbox" class="custom-checkbox" id="selectAll"></th><th>NIP</th><th>Pegawai</th><th>Departemen</th><th>Bidang</th><th>Posisi</th><th class="text-center">Pelatihan</th><th class="text-center">Jam (JP)</th><th>Progress</th><th>Status</th><th style="width:60px"></th></tr></thead><tbody id="employeeTableBody"></tbody></table></div><div class="flex items-center justify-between p-4 border-t flex-wrap gap-3" style="border-color:var(--border)"><div class="text-xs" style="color:var(--fg-muted)">Menampilkan <span id="empCount">0</span> dari <span id="empTotal">0</span> pegawai</div><div class="flex items-center gap-1" id="pagination"></div></div></div>
+        <div class="card overflow-hidden"><div class="overflow-x-auto"><table class="data-table"><thead><tr><th style="width:40px"><input type="checkbox" class="custom-checkbox" id="selectAll"></th><th>NIP</th><th>Pegawai</th><th>Departemen</th><th>Bidang</th><th>Posisi</th><th class="text-center">Pelatihan</th><th class="text-center">Jam (JP)</th><th>Capaian Target</th><th>Status</th><th style="width:60px"></th></tr></thead><tbody id="employeeTableBody"></tbody></table></div><div class="flex items-center justify-between p-4 border-t flex-wrap gap-3" style="border-color:var(--border)"><div class="text-xs" style="color:var(--fg-muted)">Menampilkan <span id="empCount">0</span> dari <span id="empTotal">0</span> pegawai</div><div class="flex items-center gap-1" id="pagination"></div></div></div>
       </section>
       
       <!-- PROGRAMS -->
@@ -727,10 +727,28 @@ function renderEmployees() {
   const pageData = filteredEmployees.slice(start, start + itemsPerPage); 
   document.getElementById('empCount').textContent = filteredEmployees.length; 
   document.getElementById('empTotal').textContent = employees.length; 
+
+  // Ambil target JP dari pengaturan
+  const jpTarget = parseInt(appSettings.jp_target) || 40;
+
   if (pageData.length === 0) { 
     tbody.innerHTML = `<tr><td colspan="11"><div class="text-center py-10" style="color:var(--fg-muted)">Tidak ada pegawai ditemukan</div></td></tr>`; 
   } else { 
-    tbody.innerHTML = pageData.map(e => `
+    tbody.innerHTML = pageData.map(e => {
+      // Hitung persentase capaian
+      const currentJp = e.training_hours || 0;
+      const targetPct = jpTarget > 0 ? Math.round((currentJp / jpTarget) * 100) : 0;
+      const barWidth = Math.min(100, targetPct); // Maksimal bar 100%
+      
+      // Tentukan warna berdasarkan capaian
+      let targetColor = 'var(--rose)'; // Merah jika < 50%
+      if (targetPct >= 100) targetColor = 'var(--emerald-light)'; // Hijau jika tercapai/lebih
+      else if (targetPct >= 75) targetColor = 'var(--emerald-light)'; // Hijau muda
+      else if (targetPct >= 50) targetColor = 'var(--amber)'; // Kuning jika 50-75%
+
+      const overAchieveText = targetPct > 100 ? `<span class="text-[9px] block" style="color:var(--emerald)">Melebihi!</span>` : '';
+
+      return `
       <tr>
         <td><input type="checkbox" class="custom-checkbox row-check"></td>
         <td style="color:var(--fg-muted); font-size: 12px;">${e.nip || '-'}</td>
@@ -747,11 +765,16 @@ function renderEmployees() {
         <td style="color:var(--fg-muted)">${e.field}</td>
         <td style="color:var(--fg-muted)">${e.position}</td>
         <td class="text-center font-medium">${e.trainings}</td>
-        <td class="text-center font-medium" style="color:var(--emerald-light)">${e.training_hours || 0}</td>
+        <td class="text-center font-medium" style="color:var(--emerald-light)">${currentJp}</td>
         <td>
           <div class="flex items-center gap-2">
-            <div class="progress-bar w-24"><div class="progress-fill" style="width:${e.completion}%"></div></div>
-            <span class="text-xs font-medium" style="color:var(--fg-muted)">${e.completion}%</span>
+            <div class="progress-bar w-20">
+              <div class="progress-fill" style="width:${barWidth}%; background:linear-gradient(90deg, ${targetColor}, ${targetColor}80)"></div>
+            </div>
+            <div class="flex flex-col">
+              <span class="text-xs font-medium" style="color:${targetColor}">${targetPct}%</span>
+              ${overAchieveText}
+            </div>
           </div>
         </td>
         <td>${e.status === 'active' ? '<span class="badge badge-emerald"><span class="w-1.5 h-1.5 rounded-full" style="background:var(--emerald)"></span>Aktif</span>' : ''}${e.status === 'training' ? '<span class="badge badge-amber"><span class="w-1.5 h-1.5 rounded-full pulse-dot" style="background:var(--amber)"></span>Pelatihan</span>' : ''}${e.status === 'completed' ? '<span class="badge badge-sky">Selesai</span>' : ''}</td>
@@ -765,11 +788,12 @@ function renderEmployees() {
           </div>
         </td>
       </tr>
-    `).join(''); 
+    `;}).join(''); 
   } 
   renderPagination(totalPages); 
   lucide.createIcons(); 
 }
+
 function renderPagination(totalPages) { 
   const pag = document.getElementById('pagination'); 
   if (totalPages <= 1) { pag.innerHTML = ''; return; } 
@@ -798,6 +822,16 @@ function showEmpDetail(id) {
   window.currentEmpLogs = empLogs; 
   
   const years = [...new Set(empLogs.map(log => new Date(log.log_date + 'T00:00:00').getFullYear()))];
+
+  // Hitung target
+  const jpTarget = parseInt(appSettings.jp_target) || 40;
+  const currentJp = e.training_hours || 0;
+  const targetPct = jpTarget > 0 ? Math.round((currentJp / jpTarget) * 100) : 0;
+  const barWidth = Math.min(100, targetPct);
+  let targetColor = 'var(--rose)';
+  if (targetPct >= 100) targetColor = 'var(--emerald-light)';
+  else if (targetPct >= 50) targetColor = 'var(--amber)';
+  const overAchieveBadge = targetPct > 100 ? `<span class="badge badge-emerald ml-2"><i class="w-3 h-3" data-lucide="trending-up"></i>Melebihi Target</span>` : '';
   
   document.getElementById('empDetailContent').innerHTML = `
     <div class="flex items-center gap-4 mb-6">
@@ -809,15 +843,15 @@ function showEmpDetail(id) {
     </div>
     <div class="grid grid-cols-3 gap-4 mb-6">
       <div class="card p-4"><div class="text-xs" style="color:var(--fg-muted)">Email</div><div class="text-sm font-medium mt-1">${e.email}</div></div>
-      <div class="card p-4"><div class="text-xs" style="color:var(--fg-muted)">Total Pelatihan (Keseluruhan)</div><div class="text-sm font-medium mt-1">${e.trainings} program</div></div>
-      <div class="card p-4"><div class="text-xs" style="color:var(--fg-muted)">Total JP (Keseluruhan)</div><div class="text-sm font-medium mt-1" style="color:var(--emerald-light)">${e.training_hours || 0} JP</div></div>
+      <div class="card p-4"><div class="text-xs" style="color:var(--fg-muted)">Total Pelatihan</div><div class="text-sm font-medium mt-1">${e.trainings} program</div></div>
+      <div class="card p-4"><div class="text-xs" style="color:var(--fg-muted)">Total Jam Pelatihan</div><div class="text-sm font-medium mt-1" style="color:var(--emerald-light)">${currentJp} JP</div></div>
     </div>
     <div class="mb-6">
       <div class="flex justify-between text-sm mb-2">
-        <span style="color:var(--fg-muted)">Tingkat Penyelesaian</span>
-        <span class="font-bold" style="color:var(--emerald-light)">${e.completion}%</span>
+        <span style="color:var(--fg-muted)">Ketercapaian Target (Target: ${jpTarget} JP) ${overAchieveBadge}</span>
+        <span class="font-bold" style="color:${targetColor}">${targetPct}%</span>
       </div>
-      <div class="progress-bar"><div class="progress-fill" style="width:${e.completion}%"></div></div>
+      <div class="progress-bar"><div class="progress-fill" style="width:${barWidth}%; background:linear-gradient(90deg, ${targetColor}, ${targetColor}80)"></div></div>
     </div>
     
     <div class="mt-2">
